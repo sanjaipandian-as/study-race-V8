@@ -44,6 +44,7 @@ systemctl enable postgresql --now
 
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='studyrace'" | grep -q 1 || \
   sudo -u postgres psql -c "CREATE USER studyrace WITH PASSWORD '$DB_PASSWORD';"
+sudo -u postgres psql -c "ALTER USER studyrace WITH PASSWORD '$DB_PASSWORD';"
 
 sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname='studyrace'" | grep -q 1 || \
   sudo -u postgres psql -c "CREATE DATABASE studyrace OWNER studyrace;"
