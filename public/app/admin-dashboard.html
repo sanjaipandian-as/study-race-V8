@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plattform-Konsole — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+
+<aside id="sidebar">
+  <a href="/" class="sb-logo"><span class="sb-flag"></span>StudyRace</a>
+  <div class="user-card">
+    <div class="user-av">👑</div>
+    <div class="user-info">
+      <div class="name" id="sb-name">Lade...</div>
+      <div class="role">Super-Admin</div>
+    </div>
+  </div>
+  <div class="nav-label">— Plattform</div>
+  <div class="nav-item active" data-section="overview"><span class="ic">🏠</span> Übersicht</div>
+  <div class="nav-item" data-section="schools"><span class="ic">🏫</span> Schulen <span class="badge" id="pending-badge" style="display:none">0</span></div>
+  <div class="nav-item" data-section="users"><span class="ic">👥</span> Nutzer</div>
+  <div class="nav-label">— System</div>
+  <div class="nav-item" data-section="system"><span class="ic">📊</span> System</div>
+  <div class="nav-item" data-section="audit"><span class="ic">🛡️</span> Audit-Log</div>
+  <div class="nav-item" data-section="permissions"><span class="ic">🔑</span> Berechtigungen</div>
+  <div class="sidebar-bottom">
+    <div class="nav-item" id="logout-item"><span class="ic">🚪</span> Abmelden</div>
+  </div>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div class="tb-greet">Willkommen, <em>Super-Admin</em>.</div>
+    <div class="tb-actions">
+      <input type="text" class="tb-search" placeholder="Suche Schulen, Nutzer…">
+      <button class="tb-icon" onclick="SRActions.showNotifications()" title="Benachrichtigungen">🔔</button>
+      <button class="tb-icon" onclick="SRActions.changePassword()" title="Passwort ändern">⚙️</button>
+    </div>
+  </div>
+  <div class="content" id="content"><div class="loading">Lade Daten…</div></div>
+</main>
+
+<div id="toast"></div>
+
+<script src="/api.js"></script>
+<script src="/actions.js"></script>
+<script>
+const TIER_NAMES = { free: 'Free', klein: 'Klein', mittel: 'Mittel', gross: 'Groß' };
+let dataCache = {};
+
+async function init() {
+  const user = await SR.requireRole('super_admin');
+  document.getElementById('sb-name').textContent = (user.first_name || '') + ' ' + (user.last_name || '');
+
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    el.onclick = () => switchSection(el.dataset.section);
+  });
+
+  document.getElementById('logout-item').onclick = async () => {
+    await SR.logout();
+    SR.go('/');
+  };
+
+  // Eagerly check for pending schools to show badge
+  try {
+    const pending = await SR.get('/api/auth/pending-schools');
+    const count = ((pending.data && pending.data.schools) || []).length;
+    if (count > 0) {
+      const badge = document.getElementById('pending-badge');
+      badge.style.display = 'inline-flex';
+      badge.textContent = count;
+    }
+  } catch {}
+
+  await switchSection('overview');
+}
+
+async function loadOrCache(key, url) {
+  if (dataCache[key]) return dataCache[key];
+  try {
+    const r = await SR.get(url);
+    dataCache[key] = r.data || r;  // some auth routes return { schools: [...] } directly
+    return dataCache[key];
+  } catch (e) {
+    return { _error: e.message || 'Daten konnten nicht geladen werden' };
+  }
+}
+
+async function switchSection(name) {
+  document.querySelectorAll('.nav-item[data-section]').forEach(el =>
+    el.classList.toggle('active', el.dataset.section === name)
+  );
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade…</div>';
+
+  if (name === 'overview') content.innerHTML = await renderOverview();
+  else if (name === 'schools') content.innerHTML = await renderSchools();
+  else if (name === 'users') content.innerHTML = await renderUsers();
+  else if (name === 'system') content.innerHTML = await renderSystem();
+  else if (name === 'audit') content.innerHTML = await renderAudit();
+  else if (name === 'permissions') content.innerHTML = await renderPermissions();
+}
+
+async function renderOverview() {
+  const home = await loadOrCache('home', '/api/data/admin/home');
+  if (home._error) return errorBox(home._error);
+
+  let pending = [], all = [];
+  try {
+    const p = await SR.get('/api/auth/pending-schools');
+    pending = (p.data && p.data.schools) || [];
+  } catch {}
+  try {
+    const a = await SR.get('/api/auth/all-schools');
+    all = (a.data && a.data.schools) || [];
+  } catch {}
+
+  const stats = home.stats || {};
+  const approvedCount = all.filter(s => s.status === 'approved').length;
+
+  return `
+    <div class="dash-banner">
+      <img src="/images/classroom-mixed.jpg" alt="">
+      <div class="banner-inner">
+        <div class="banner-eyebrow">System-Konsole · ${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <h1>Plattform-<em>Konsole</em></h1>
+        <div class="banner-sub">${approvedCount} aktive Schulen · ${pending.length} warten auf Freigabe</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card accent-emerald">
+        <div class="stat-icon">🏫</div>
+        <div class="label">Aktive Schulen</div><div class="val">${approvedCount}</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-icon">⏳</div>
+        <div class="label">Anstehend</div><div class="val"><em>${pending.length}</em></div>
+      </div>
+      <div class="stat-card accent-blue">
+        <div class="stat-icon">👥</div>
+        <div class="label">Nutzer:innen</div><div class="val">${stats.total_users || 0}</div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-icon">✅</div>
+        <div class="label">Verfügbarkeit</div><div class="val">${stats.uptime_pct || '99.9'}%</div><div class="delta">Alle Systeme normal</div>
+      </div>
+    </div>
+    ${pending.length > 0 ? `
+      <div class="s-h"><h2>⏳ Anstehende Anmeldungen <em>(${pending.length})</em></h2></div>
+      <div class="list-card">
+        ${pending.map(s => `
+          <div class="list-row" id="row-${s.id}">
+            <div class="av-circle" style="background:linear-gradient(135deg,#E8A856,#C77B2C);">🏫</div>
+            <div class="list-main">
+              <div class="list-title">${s.name || 'Schule'}</div>
+              <div class="list-sub">${s.city || ''} · ${s.contact_email || ''}</div>
+            </div>
+            <div class="list-meta">${formatDate(s.created_at)}</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-cream btn-sm" onclick="rejectSchool(${s.id})">Ablehnen</button>
+              <button class="btn btn-emerald btn-sm" onclick="approveSchool(${s.id})">Freigeben →</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="s-h"><h2>Aktive Schulen</h2></div>
+    ${approvedCount === 0 ? emptyBox('🏫', 'Noch keine aktiven Schulen', 'Sobald du eine Schule freigibst, erscheint sie hier.') : `
+      <div class="list-card">
+        ${all.filter(s => s.status === 'approved').slice(0, 8).map(s => `
+          <div class="list-row">
+            <div class="av-circle">🏫</div>
+            <div class="list-main">
+              <div class="list-title">${s.name}</div>
+              <div class="list-sub">${s.city || ''}</div>
+            </div>
+            <span class="pill cream">${TIER_NAMES[s.tier] || s.tier}</span>
+            <div class="list-meta">${s.teacher_count || 0} L · ${s.student_count || 0} S</div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderSchools() {
+  let pending = [], all = [];
+  try { pending = ((await SR.get('/api/auth/pending-schools')).data || {}).schools || []; } catch {}
+  try { all = ((await SR.get('/api/auth/all-schools')).data || {}).schools || []; } catch {}
+
+  return `
+    <div class="s-h">
+      <div><h2>Alle Schulen</h2><div class="sub">${all.length} insgesamt · ${pending.length} anstehend</div></div>
+    </div>
+    ${pending.length > 0 ? `
+      <div class="s-h" style="margin-top:8px;"><h3 style="font-size:18px;">⏳ Anstehende Freigaben</h3></div>
+      <div class="list-card">
+        ${pending.map(s => `
+          <div class="list-row" id="row-all-${s.id}">
+            <div class="av-circle" style="background:linear-gradient(135deg,#E8A856,#C77B2C);">🏫</div>
+            <div class="list-main">
+              <div class="list-title">${s.name}</div>
+              <div class="list-sub">${s.contact_name || ''} · ${s.contact_email || ''}</div>
+            </div>
+            <div class="list-meta">${formatDate(s.created_at)}</div>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-cream btn-sm" onclick="rejectSchool(${s.id})">Ablehnen</button>
+              <button class="btn btn-emerald btn-sm" onclick="approveSchool(${s.id})">Freigeben →</button>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
+    <div class="s-h" style="margin-top:8px;"><h3 style="font-size:18px;">Aktive Schulen</h3></div>
+    ${all.filter(s => s.status === 'approved').length === 0 ? emptyBox('🏫', 'Keine aktiven Schulen', 'Noch keine freigegebenen Schulen.') : `
+      <div class="list-card">
+        ${all.filter(s => s.status === 'approved').map(s => `
+          <div class="list-row">
+            <div class="av-circle">🏫</div>
+            <div class="list-main">
+              <div class="list-title">${s.name}</div>
+              <div class="list-sub">${s.city || ''} · ${s.postcode || ''}</div>
+            </div>
+            <span class="pill cream">${TIER_NAMES[s.tier] || s.tier}</span>
+            <div class="list-meta">${s.teacher_count || 0} L · ${s.student_count || 0} S</div>
+            <button class="btn btn-cream btn-sm" onclick='showSchoolDetails(${JSON.stringify(s).replace(/'/g, "&apos;")})'>Details →</button>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderUsers() {
+  const d = await loadOrCache('users', '/api/data/admin/users');
+  if (d._error) return errorBox(d._error);
+  const stats = d.stats || {};
+  const list = d.users || [];
+  return `
+    <div class="s-h">
+      <div><h2>Alle Nutzer</h2><div class="sub">Plattformweit</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="label">Schüler:innen</div><div class="val">${stats.students || 0}</div></div>
+      <div class="stat-card"><div class="label">Lehrkräfte</div><div class="val">${stats.teachers || 0}</div></div>
+      <div class="stat-card"><div class="label">Schul-Admins</div><div class="val">${stats.school_admins || 0}</div></div>
+      <div class="stat-card"><div class="label">Super-Admins</div><div class="val">${stats.super_admins || 0}</div></div>
+    </div>
+    ${list.length === 0 ? emptyBox('👥', 'Keine Nutzer geladen', 'Nutzerliste wird über separate Tools verwaltet.') : `
+      <div class="list-card">
+        ${list.slice(0, 30).map(u => `
+          <div class="list-row">
+            <div class="av-circle">${(u.first_name || '?').charAt(0)}</div>
+            <div class="list-main">
+              <div class="list-title">${u.first_name || ''} ${u.last_name || ''}</div>
+              <div class="list-sub">${u.email || ''} · ${u.school_name || ''}</div>
+            </div>
+            <span class="pill ${u.role === 'super_admin' ? 'amber' : u.role === 'teacher' ? 'emerald' : 'cream'}">${u.role}</span>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderSystem() {
+  const d = await loadOrCache('system', '/api/data/admin/system');
+  const status = (d._error ? {} : d) || {};
+  return `
+    <div class="s-h">
+      <div><h2>System-<em>Status</em></h2><div class="sub">Plattform-Gesundheit und Infrastruktur</div></div>
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— Komponenten</div>
+      <div style="margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-soft);"><span>API-Server</span><span class="pill emerald"><span class="dot"></span> ${status.api_status || 'Online'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-soft);"><span>Datenbank</span><span class="pill emerald"><span class="dot"></span> ${status.db_status || 'Verbunden'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-soft);"><span>E-Mail-Versand</span><span class="pill emerald"><span class="dot"></span> ${status.email_status || 'Aktiv'}</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line-soft);"><span>SSL-Zertifikat</span><span class="pill emerald"><span class="dot"></span> Gültig</span></div>
+        <div style="display:flex;justify-content:space-between;padding:12px 0;"><span>Letztes Backup</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-mute);">${status.last_backup || formatDate(new Date())}</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— Performance (24h)</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px;">
+        <div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);">Anfragen</div><div style="font-family:'Fraunces',serif;font-size:24px;font-weight:500;margin-top:4px;">${(status.requests_24h || 0).toLocaleString('de-DE')}</div></div>
+        <div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);">Ø Antwortzeit</div><div style="font-family:'Fraunces',serif;font-size:24px;font-weight:500;margin-top:4px;">${status.avg_response_ms || 0}ms</div></div>
+        <div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);">Fehlerrate</div><div style="font-family:'Fraunces',serif;font-size:24px;font-weight:500;margin-top:4px;color:var(--emerald);font-style:italic;">${status.error_rate_pct || 0}%</div></div>
+      </div>
+    </div>
+  `;
+}
+
+async function renderAudit() {
+  const d = await loadOrCache('audit', '/api/data/admin/audit');
+  if (d._error) return errorBox(d._error);
+  const list = d.entries || [];
+  return `
+    <div class="s-h">
+      <div><h2>Audit-Log</h2><div class="sub">Sicherheitsrelevante Aktionen — letzte 100 Einträge</div></div>
+    </div>
+    ${list.length === 0 ? emptyBox('🛡️', 'Keine Audit-Einträge', 'Sobald sicherheitsrelevante Aktionen stattfinden, erscheinen sie hier.') : `
+      <div class="list-card">
+        ${list.slice(0, 20).map(e => `
+          <div class="list-row">
+            <div class="av-circle" style="background:${e.severity === 'high' ? 'linear-gradient(135deg,#B85537,#a13a1f)' : 'linear-gradient(135deg,#888,#aaa)'};">${e.severity === 'high' ? '⚠' : '•'}</div>
+            <div class="list-main">
+              <div class="list-title" style="font-family:'JetBrains Mono',monospace;font-size:12.5px;">${e.action}</div>
+              <div class="list-sub">${e.actor || 'system'} · ${e.target || ''}</div>
+            </div>
+            <div class="list-meta" style="font-family:'JetBrains Mono',monospace;font-size:11px;">${e.timestamp || ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderPermissions() {
+  const d = await loadOrCache('permissions', '/api/data/admin/permissions');
+  const roles = (d._error ? null : d.roles) || [
+    { name: 'super_admin', label: 'Super-Admin', desc: 'Volle Plattform-Kontrolle', users: 1 },
+    { name: 'school_admin', label: 'Schul-Admin', desc: 'Verwaltung einer Schule', users: 0 },
+    { name: 'teacher', label: 'Lehrkraft', desc: 'Klassen, Aufgaben, Schüler-Fortschritt', users: 0 },
+    { name: 'student', label: 'Schüler:in', desc: 'Aufgaben lösen, Fortschritt sehen', users: 0 },
+  ];
+  return `
+    <div class="s-h">
+      <div><h2>Berechtigungen</h2><div class="sub">Rollen und Zugriffskontrolle</div></div>
+    </div>
+    <div class="list-card">
+      ${roles.map(r => `
+        <div class="list-row">
+          <div class="av-circle">${r.name === 'super_admin' ? '👑' : r.name === 'school_admin' ? '🏫' : r.name === 'teacher' ? '👨‍🏫' : '🎓'}</div>
+          <div class="list-main">
+            <div class="list-title">${r.label}</div>
+            <div class="list-sub">${r.desc}</div>
+          </div>
+          <div class="list-meta">${r.users || 0} Nutzer</div>
+        </div>
+      `).join('')}
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— Zugriffsmatrix</div>
+      <p style="font-size:13.5px;color:var(--ink-soft);margin-top:10px;line-height:1.6;">Berechtigungen werden über JWT-Rollen erzwungen. Jede API-Route prüft die Rolle serverseitig (siehe <code style="background:var(--cream);padding:2px 6px;border-radius:4px;font-size:12px;">backend/middleware/auth.js</code>).</p>
+    </div>
+  `;
+}
+
+async function approveSchool(id) {
+  if (!confirm('Diese Schule freigeben?')) return;
+  try {
+    await SR.post(`/api/auth/approve-school/${id}`, {});
+    showToast('Schule wurde freigegeben.');
+    dataCache = {};
+    await switchSection('overview');
+    init();
+  } catch (e) {
+    showToast(e.message || 'Fehler beim Freigeben.', 'error');
+  }
+}
+
+async function rejectSchool(id) {
+  const reason = prompt('Grund für Ablehnung (optional):') || '';
+  try {
+    await SR.post(`/api/auth/reject-school/${id}`, { reason });
+    showToast('Schule wurde abgelehnt.');
+    dataCache = {};
+    await switchSection('overview');
+  } catch (e) {
+    showToast(e.message || 'Fehler beim Ablehnen.', 'error');
+  }
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function emptyBox(icon, title, msg) {
+  return `<div class="card empty-state"><div class="em-icon">${icon}</div><h3>${title}</h3><p>${msg}</p></div>`;
+}
+function errorBox(msg) {
+  return `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Daten konnten nicht geladen werden</h3><p>${msg}</p></div>`;
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('error', type === 'error');
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ─── School detail view (previously dead "Details" button) ───
+function showSchoolDetails(s) {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="s-h">
+      <div><div class="page-h-eyebrow">Schule</div>
+      <h1>${s.name || 'Schule'}</h1>
+      <div class="sub">${s.city || ''} ${s.postcode ? '· ' + s.postcode : ''}</div></div>
+      <button class="btn btn-cream" onclick="switchSection('schools')">← Zurück</button>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card accent-emerald"><div class="stat-icon">👩‍🏫</div><div class="label">Lehrkräfte</div><div class="val">${s.teacher_count || 0}</div></div>
+      <div class="stat-card accent-blue"><div class="stat-icon">👥</div><div class="label">Schüler:innen</div><div class="val">${s.student_count || 0}</div></div>
+      <div class="stat-card accent-violet"><div class="stat-icon">💳</div><div class="label">Tarif</div><div class="val" style="font-size:22px;">${(TIER_NAMES && TIER_NAMES[s.tier]) || s.tier || 'Free'}</div></div>
+      <div class="stat-card accent-amber"><div class="stat-icon">✅</div><div class="label">Status</div><div class="val" style="font-size:22px;">${s.status === 'approved' ? 'Aktiv' : s.status}</div></div>
+    </div>
+    <div class="card" style="padding:26px;">
+      <div class="card-tag emerald">— Kontakt &amp; Details</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Kontakt-E-Mail</span><strong>${s.contact_email || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Stadt</span><strong>${s.city || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">PLZ</span><strong>${s.postcode || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="color:var(--ink-mute);">Registriert</span><strong>${formatDate(s.created_at)}</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

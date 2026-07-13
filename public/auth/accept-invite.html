@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Konto aktivieren — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root { --cream: #FAF6F0; --ink: #1A2421; --ink-soft: #3C4A45; --ink-mute: #6B7770;
+        --emerald: #0E6648; --emerald-soft: #DCEEE3; --line: #E8DFD0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--ink);
+       min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px;
+       -webkit-font-smoothing: antialiased; }
+.box { width: 100%; max-width: 460px; background: white; border: 1px solid var(--line);
+       border-radius: 18px; padding: 44px; box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+h1 { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 500; line-height: 1.15; margin-bottom: 12px; }
+h1 em { font-style: italic; color: var(--emerald); }
+.sub { color: var(--ink-soft); font-size: 14.5px; line-height: 1.5; margin-bottom: 28px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+               text-transform: uppercase; color: var(--ink-mute); margin-bottom: 6px; }
+.field input { width: 100%; padding: 12px 14px; background: var(--cream); border: 1.5px solid var(--line);
+               border-radius: 10px; font-family: inherit; font-size: 14.5px; outline: none;
+               transition: border-color .15s; }
+.field input:focus { border-color: var(--emerald); }
+.btn { width: 100%; padding: 14px; background: var(--ink); color: var(--cream); border: none;
+       border-radius: 10px; font-family: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer;
+       transition: background .15s; margin-top: 8px; }
+.btn:hover { background: #000; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.error { display: none; background: #FFEAEA; border: 1px solid #E58B8B; color: #A33232;
+         padding: 11px 14px; border-radius: 10px; font-size: 13.5px; margin-bottom: 14px; }
+.success { display: none; background: var(--emerald-soft); border: 1px solid var(--emerald);
+           color: var(--emerald); padding: 11px 14px; border-radius: 10px; font-size: 13.5px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h1>Konto <em>aktivieren</em>.</h1>
+  <p class="sub">Wähle ein sicheres Passwort. Danach geht's direkt zu deinem Dashboard.</p>
+
+  <div id="form-error" class="error"></div>
+  <div id="form-success" class="success"></div>
+
+  <form onsubmit="event.preventDefault(); activate();">
+    <div class="field">
+      <label>Neues Passwort</label>
+      <input type="password" id="password" placeholder="Mind. 8 Zeichen" required minlength="8">
+    </div>
+    <div class="field">
+      <label>Passwort bestätigen</label>
+      <input type="password" id="password2" placeholder="Nochmal eingeben" required minlength="8">
+    </div>
+    <button type="submit" class="btn" id="btn">Konto aktivieren →</button>
+  </form>
+</div>
+
+<script src="/api.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const token = params.get('token');
+
+if (!token) {
+  document.getElementById('form-error').textContent = 'Kein gültiger Einladungslink. Bitte überprüfe die URL.';
+  document.getElementById('form-error').style.display = 'block';
+  document.getElementById('btn').disabled = true;
+}
+
+async function activate() {
+  const p1 = document.getElementById('password').value;
+  const p2 = document.getElementById('password2').value;
+  if (p1 !== p2) return SR.showError('Passwörter stimmen nicht überein');
+
+  const btn = document.getElementById('btn');
+  btn.disabled = true; btn.textContent = 'Lädt...';
+  const r = await SR.acceptInvite(token, p1);
+  btn.disabled = false; btn.textContent = 'Konto aktivieren →';
+  if (!r.ok) return SR.showError(r.data.error || 'Aktivierung fehlgeschlagen');
+  SR.showSuccess('Konto aktiviert! Weiterleitung...');
+  setTimeout(() => SR.go(r.data.redirect || '/'), 1000);
+}
+</script>
+</body>
+</html>

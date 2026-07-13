@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyRace — Adaptive Lernplattform für deutsche Schulen</title>
+<meta name="description" content="StudyRace verbindet Lehrplan, Gamification und Lehrer-Dashboard in einer Plattform. DSGVO-konform, in Deutschland gehostet.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.hero { background: var(--cream); border-bottom: 1px solid var(--line-soft); }
+.hero-grid { display: grid; grid-template-columns: 1fr 1fr; min-height: 600px; }
+.hero-left { padding: 90px 64px 90px 32px; display: flex; flex-direction: column; justify-content: center;
+  max-width: 600px; margin-left: auto; width: 100%; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--emerald); font-weight: 500; margin-bottom: 28px;
+}
+.hero-eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--emerald); }
+.hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: clamp(38px, 4.2vw, 54px);
+  line-height: 1.05; letter-spacing: -0.025em;
+  margin-bottom: 24px; color: var(--ink);
+}
+.hero h1 em { font-style: italic; color: var(--emerald); font-weight: 500; }
+.hero p.lead { font-size: 18px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 36px; max-width: 480px; }
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
+.hero-meta { font-size: 13px; color: var(--ink-mute); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.hero-meta .item { display: inline-flex; align-items: center; gap: 6px; }
+.hero-meta .item::before { content: '✓'; color: var(--emerald); font-weight: 700; }
+.hero-right { position: relative; background: var(--ink); overflow: hidden; }
+.hero-right img { width: 100%; height: 100%; object-fit: cover; }
+.hero-overlay {
+  position: absolute; bottom: 32px; left: 32px; right: 32px;
+  background: rgba(28,31,26,0.88); backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.12); border-radius: 14px;
+  padding: 18px 20px; display: flex; align-items: center; gap: 16px; color: white;
+}
+.hero-overlay .av { width: 40px; height: 40px; border-radius: 50%;
+  background: linear-gradient(135deg, #6BD4A0, var(--emerald));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.hero-overlay .ov-text { flex: 1; }
+.hero-overlay .ov-name { font-size: 14px; font-weight: 500; }
+.hero-overlay .ov-sub { font-size: 11.5px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.05em; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.hero-overlay .ov-xp { font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 600; color: #6BD4A0; }
+@media (max-width: 900px) {
+  .hero-grid { grid-template-columns: 1fr; min-height: auto; }
+  .hero-left { padding: 50px 24px; max-width: 100%; }
+  .hero-right { aspect-ratio: 4/3; }
+}
+
+/* Subtle pricing teaser at the bottom of the page (NOT in nav, NOT in hero) */
+.pricing-quiet {
+  background: var(--cream-2);
+  border-top: 1px solid var(--line-soft);
+  padding: 56px 0;
+  text-align: center;
+}
+.pricing-quiet .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink-mute); margin-bottom: 14px;
+}
+.pricing-quiet h3 {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: 22px; color: var(--ink-soft);
+  margin-bottom: 10px; letter-spacing: -0.01em;
+}
+.pricing-quiet p {
+  font-size: 14px; color: var(--ink-mute); margin-bottom: 18px;
+}
+.pricing-quiet a {
+  font-size: 13.5px; color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 1px;
+}
+.pricing-quiet a:hover { color: var(--emerald); border-color: var(--emerald); }
+
+/* ── Produkt-Vorschau (Homepage) ── */
+.preview-section { background: linear-gradient(180deg, var(--cream-2), var(--cream)); }
+.preview-shots {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 28px; margin-top: 44px;
+}
+.browser {
+  margin: 0; background: #fff; border: 1px solid var(--line-soft);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 24px 60px -30px rgba(20,30,20,0.45);
+}
+.browser-bar {
+  display: flex; align-items: center; gap: 7px;
+  padding: 11px 14px; background: var(--cream-2);
+  border-bottom: 1px solid var(--line-soft);
+}
+.browser-bar span { width: 10px; height: 10px; border-radius: 50%; background: #cfc6b4; }
+.browser-bar span:nth-child(1){ background:#e0a0a0; }
+.browser-bar span:nth-child(2){ background:#e5cf9a; }
+.browser-bar span:nth-child(3){ background:#a8cdb0; }
+.browser-url {
+  margin-left: 10px; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--ink-mute);
+}
+.browser img { width: 100%; display: block; }
+.browser figcaption {
+  font-size: 13.5px; color: var(--ink-soft); line-height: 1.55;
+  padding: 14px 18px; border-top: 1px solid var(--line-soft);
+}
+@media (max-width: 760px) {
+  .preview-shots { grid-template-columns: 1fr; gap: 22px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <div class="nav-links">
+      <a href="/" class="current">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-left">
+      <div class="hero-eyebrow">Für deutsche Schulen · Klassen 5–10</div>
+      <h1>Lernen, das sich endlich <em>nach Fortschritt</em> anfühlt.</h1>
+      <p class="lead">
+        Adaptive Aufgaben, gemeinsame Klassenrennen und ein Lehrer-Dashboard, das Zeit spart — alles in einer Plattform, gebaut für deutsche Klassenzimmer.
+      </p>
+      <div class="hero-actions">
+        <a href="/login" class="btn btn-emerald btn-lg">Kostenlos starten <span class="arrow">→</span></a>
+        <a href="/funktionen" class="btn btn-outline btn-lg">Funktionen</a>
+      </div>
+      <div class="hero-meta">
+        <span class="item">4 Wochen kostenlos</span>
+        <span class="item">DSGVO-konform</span>
+        <span class="item">In Deutschland gehostet</span>
+      </div>
+    </div>
+    <div class="hero-right">
+      <img src="/images/classroom-mixed.jpg" alt="Schüler:innen im Klassenzimmer">
+      <div class="hero-overlay">
+        <div class="av">🎓</div>
+        <div class="ov-text">
+          <div class="ov-name">Klasse 8B · 24 Schüler:innen</div>
+          <div class="ov-sub">MATHE · KLASSENRENNEN LIVE</div>
+        </div>
+        <div class="ov-xp">+30 XP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUKT-VORSCHAU -->
+<section class="section preview-section">
+  <div class="container">
+    <div style="text-align:center;">
+      <div class="section-eyebrow" style="justify-content:center;">Ein Blick hinein</div>
+      <h2 class="section-title">So sieht <em>StudyRace</em> aus.</h2>
+      <p class="section-sub" style="margin-left:auto; margin-right:auto;">Ein Blick in die echten Dashboards — für Schüler:innen und für Lehrkräfte.</p>
+    </div>
+    <div class="preview-shots">
+      <figure class="browser">
+        <div class="browser-bar"><span></span><span></span><span></span><div class="browser-url">studyrace.de/dashboard</div></div>
+        <img src="/images/preview-student.png" alt="Schüler-Dashboard von StudyRace mit XP, Streak und Klassenrennen">
+        <figcaption><strong>Für Schüler:innen</strong> — XP, Streak und das Klassenrennen auf einen Blick.</figcaption>
+      </figure>
+      <figure class="browser">
+        <div class="browser-bar"><span></span><span></span><span></span><div class="browser-url">studyrace.de/dashboard</div></div>
+        <img src="/images/preview-teacher.png" alt="Lehrkraft-Dashboard von StudyRace mit Klassenübersicht">
+        <figcaption><strong>Für Lehrkräfte</strong> — die ganze Klasse in Echtzeit, ohne Mehraufwand.</figcaption>
+      </figure>
+    </div>
+    <div style="text-align:center; margin-top:38px;">
+      <a href="/login" class="btn btn-emerald btn-lg">Selbst ausprobieren <span class="arrow">→</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- ÜBER -->
+<section class="section paper">
+  <div class="container">
+    <div class="grid-2">
+      <div>
+        <div class="section-eyebrow">Was wir versprechen</div>
+        <h2 class="section-title">Eine Plattform, die <em>Schule wieder spannend</em> macht.</h2>
+        <p style="font-size:16px; color:var(--ink-soft); line-height:1.7; margin-bottom:16px;">Lehrplan-Aufgaben mit Echtzeit-Wettbewerb. Schüler:innen sehen ihren Fortschritt — Lehrkräfte sehen die Klasse.</p>
+        <p style="font-size:16px; color:var(--ink-soft); line-height:1.7; margin-bottom:24px;">Werbefrei. Geschlossen. Deine Klasse, deine Schule, dein Tempo.</p>
+        <a href="/funktionen" class="btn btn-emerald">Alle Funktionen <span class="arrow">→</span></a>
+      </div>
+      <div class="media-img">
+        <img src="/images/boy-focused.jpg" alt="Schüler beim Lernen">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DEZENTE PREIS-ANDEUTUNG am Ende, klein, ohne Knall -->
+<section class="pricing-quiet">
+  <div class="container">
+    <div class="label">— Faire Preise pro Schule</div>
+    <h3>Schon ab 0 € im Monat. Pauschal pro Schule, nicht pro Schüler.</h3>
+    <p>4 Wochen kostenlos testen. Keine Bindung.</p>
+    <a href="/preise">Tarife ansehen →</a>
+  </div>
+</section>
+
+<!-- DARK CTA -->
+<section class="section dark">
+  <div class="container" style="text-align:center;">
+    <h2 class="section-title">Bereit, Schule zu <em>verändern</em>?</h2>
+    <p class="section-sub" style="margin-left:auto; margin-right:auto;">Kostenlos starten. Keine Bindung.</p>
+    <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+      <a href="/login" class="btn btn-lg" style="background:var(--cream-2); color:var(--ink);">Kostenlos starten <span class="arrow">→</span></a>
+      <a href="/kontakt" class="btn btn-lg" style="background:transparent; color:white; border:1.5px solid rgba(255,255,255,0.3);">Kontakt aufnehmen</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER mit pricing link dezent -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+        <p>Die adaptive Lernplattform, gebaut für deutsche Klassenzimmer. In Deutschland gehostet.</p>
+      </div>
+      <div class="footer-col">
+        <h6>Plattform</h6>
+        <a href="/funktionen">Funktionen</a>
+        <a href="/login">Anmelden</a>
+        <a href="/kontakt">Kontakt</a>
+        <a href="/preise" class="footer-pricing-link">Preise</a>
+      </div>
+      <div class="footer-col">
+        <h6>Anmelden als</h6>
+        <a href="/login">Schüler:in</a>
+        <a href="/login">Lehrkraft</a>
+        <a href="/login">Schul-Verwaltung</a>
+        <a href="/login">Admin</a>
+      </div>
+      <div class="footer-col">
+        <h6>Unternehmen</h6>
+        <a href="/ueber-uns">Über uns</a>
+        <a href="/kontakt">Kontakt</a>
+      </div>
+      <div class="footer-col">
+        <h6>Rechtliches</h6>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+        <a href="/agb">AGB</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 StudyRace · In Deutschland gemacht 🇩🇪</div>
+      <div>studyrace.de</div>
+    </div>
+  </div>
+</footer>
+
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}</script>
+<script src="/api.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

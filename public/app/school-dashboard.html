@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Schul-Verwaltung — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+
+<aside id="sidebar">
+  <a href="/" class="sb-logo"><span class="sb-flag"></span>StudyRace</a>
+  <div class="user-card">
+    <div class="user-av">🏫</div>
+    <div class="user-info">
+      <div class="name" id="sb-name">Lade...</div>
+      <div class="role">Schul-Verwaltung</div>
+    </div>
+  </div>
+  <div class="nav-label">— Schule</div>
+  <div class="nav-item active" data-section="overview"><span class="ic">🏠</span> Übersicht</div>
+  <div class="nav-item" data-section="teachers"><span class="ic">👨‍🏫</span> Lehrkräfte</div>
+  <div class="nav-item" data-section="students"><span class="ic">🎓</span> Schüler:innen</div>
+  <div class="nav-item" data-section="classes"><span class="ic">📚</span> Klassen</div>
+  <div class="nav-label">— Verwaltung</div>
+  <div class="nav-item" data-section="analytics"><span class="ic">📊</span> Analysen</div>
+  <div class="nav-item" data-section="reports"><span class="ic">📋</span> Berichte</div>
+  <div class="nav-item" data-section="announcements"><span class="ic">📢</span> Ankündigungen</div>
+  <div class="nav-item" data-section="settings"><span class="ic">⚙️</span> Einstellungen</div>
+  <div class="sidebar-bottom">
+    <div class="nav-item" id="logout-item"><span class="ic">🚪</span> Abmelden</div>
+  </div>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div class="tb-greet">Willkommen, <em><span id="name-display">…</span></em>.</div>
+    <div class="tb-actions">
+      <input type="text" class="tb-search" placeholder="Suche…">
+      <button class="tb-icon" onclick="SRActions.showNotifications()" title="Benachrichtigungen">🔔</button>
+      <button class="tb-icon" onclick="SRActions.changePassword()" title="Passwort ändern">⚙️</button>
+    </div>
+  </div>
+  <div class="content" id="content"><div class="loading">Lade Daten…</div></div>
+</main>
+
+<div id="toast"></div>
+
+<script src="/api.js"></script>
+<script src="/actions.js"></script>
+<script>
+const TIER_NAMES = { free: 'Free', klein: 'Klein', mittel: 'Mittel', gross: 'Groß' };
+const TIER_PRICES = { free: '0 € / Monat', klein: '50 € / Monat', mittel: '75 € / Monat', gross: '100 € / Monat' };
+let dataCache = {};
+let currentUser = null;
+
+async function init() {
+  currentUser = await SR.requireRole('school_admin');
+  document.getElementById('sb-name').textContent = (currentUser.first_name || '') + ' ' + (currentUser.last_name || '');
+  document.getElementById('name-display').textContent = currentUser.first_name || 'Verwaltung';
+
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    el.onclick = () => switchSection(el.dataset.section);
+  });
+
+  document.getElementById('logout-item').onclick = async () => {
+    await SR.logout();
+    SR.go('/');
+  };
+
+  await switchSection('overview');
+}
+
+async function loadOrCache(key, url) {
+  if (dataCache[key]) return dataCache[key];
+  try {
+    const r = await SR.get(url);
+    dataCache[key] = r.data || {};
+    return dataCache[key];
+  } catch (e) {
+    return { _error: e.message || 'Daten konnten nicht geladen werden' };
+  }
+}
+
+async function switchSection(name) {
+  document.querySelectorAll('.nav-item[data-section]').forEach(el =>
+    el.classList.toggle('active', el.dataset.section === name)
+  );
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade…</div>';
+
+  if (name === 'overview') content.innerHTML = await renderOverview();
+  else if (name === 'teachers') content.innerHTML = await renderTeachers();
+  else if (name === 'students') content.innerHTML = await renderStudents();
+  else if (name === 'classes') content.innerHTML = await renderClasses();
+  else if (name === 'analytics') content.innerHTML = await renderAnalytics();
+  else if (name === 'reports') content.innerHTML = await renderReports();
+  else if (name === 'announcements') content.innerHTML = await renderAnnouncements();
+  else if (name === 'settings') content.innerHTML = await renderSettings();
+}
+
+async function renderOverview() {
+  const d = await loadOrCache('home', '/api/data/school/home');
+  if (d._error) return errorBox(d._error);
+  const school = d.school || {};
+  const stats = d.stats || {};
+  const tier = school.tier || 'free';
+  const trialInfo = tier === 'free' && school.trial_ends_at
+    ? `Testphase endet am ${school.trial_ends_at}`
+    : `${TIER_PRICES[tier] || '—'}`;
+
+  return `
+    <div class="dash-banner">
+      <img src="/images/classroom-bright.jpg" alt="">
+      <div class="banner-inner">
+        <div class="banner-eyebrow">Schul-Verwaltung · ${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <h1>${school.name || 'Deine Schule'}</h1>
+        <div class="banner-sub">${school.city || ''} ${school.postcode ? '· ' + school.postcode : ''}</div>
+      </div>
+    </div>
+    <div class="tier-banner" style="background:var(--ink);color:var(--cream-2);border-radius:14px;padding:22px 26px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:6px;">Aktueller Tarif</div>
+        <div style="font-family:'Fraunces',serif;font-weight:500;font-size:22px;color:var(--cream-2);">${TIER_NAMES[tier] || tier}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7);margin-top:4px;">${trialInfo}</div>
+      </div>
+      <a href="/preise" class="btn btn-emerald">Tarif ändern</a>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card accent-emerald">
+        <div class="stat-icon">👩‍🏫</div>
+        <div class="label">Lehrkräfte</div><div class="val">${stats.teachers || 0}</div>
+      </div>
+      <div class="stat-card accent-blue">
+        <div class="stat-icon">👥</div>
+        <div class="label">Schüler:innen</div><div class="val">${stats.students || 0}</div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-icon">📚</div>
+        <div class="label">Klassen</div><div class="val">${stats.classes || 0}</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-icon">📊</div>
+        <div class="label">Ø Genauigkeit</div><div class="val"><em>${stats.avg_accuracy || 0}%</em></div>
+      </div>
+    </div>
+    <div class="s-h"><h2><span class="sec-icon-chip">🚀</span>Schnellzugriff</h2></div>
+    <div class="quick-tiles">
+      <div class="quick-tile" onclick="switchSection('teachers')">
+        <div class="qt-icon">👩‍🏫</div>
+        <div class="qt-title">Lehrkräfte</div>
+        <div class="qt-desc">${stats.teachers || 0} aktiv · neue einladen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('students')">
+        <div class="qt-icon">👥</div>
+        <div class="qt-title">Schüler:innen</div>
+        <div class="qt-desc">${stats.students || 0} angemeldet.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('classes')">
+        <div class="qt-icon">📚</div>
+        <div class="qt-title">Klassen</div>
+        <div class="qt-desc">${stats.classes || 0} aktive Klassen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('announcements')">
+        <div class="qt-icon">📣</div>
+        <div class="qt-title">Ankündigungen</div>
+        <div class="qt-desc">Infos an die ganze Schule senden.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('settings')">
+        <div class="qt-icon">⚙️</div>
+        <div class="qt-title">Einstellungen</div>
+        <div class="qt-desc">Schuldaten & DSGVO-Export.</div>
+      </div>
+      <div class="quick-tile" onclick="window.location.href='/preise'">
+        <div class="qt-icon">💳</div>
+        <div class="qt-title">Tarif</div>
+        <div class="qt-desc">Tarif ansehen oder ändern.</div>
+      </div>
+    </div>
+  `;
+}
+
+async function renderTeachers() {
+  const d = await loadOrCache('teachers', '/api/data/school/teachers');
+  if (d._error) return errorBox(d._error);
+  const list = d.teachers || [];
+  return `
+    <div class="s-h">
+      <div><h2>Lehrkräfte</h2><div class="sub">${list.length} Lehrkräfte an deiner Schule</div></div>
+      <button class="btn btn-emerald" onclick="SRActions.inviteTeacher()">+ Einladen <span class="arrow">→</span></button>
+    </div>
+    ${list.length === 0 ? emptyBox('👨‍🏫', 'Noch keine Lehrkräfte', 'Lade deine ersten Lehrkräfte ein.') : `
+      <div class="list-card">
+        ${list.map(t => `
+          <div class="list-row">
+            <div class="av-circle">${(t.first_name || '?').charAt(0)}</div>
+            <div class="list-main">
+              <div class="list-title">${t.first_name || ''} ${t.last_name || ''}</div>
+              <div class="list-sub">${t.email || ''} · ${t.subject || 'Fach n/a'}</div>
+            </div>
+            <div class="list-meta">${t.class_count || 0} Klassen</div>
+            <button class="btn btn-cream btn-sm" onclick='showTeacherProfile(${JSON.stringify(t).replace(/'/g, "&apos;")})'>Profil →</button>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderStudents() {
+  const d = await loadOrCache('students', '/api/data/school/students');
+  if (d._error) return errorBox(d._error);
+  const list = d.students || [];
+  return `
+    <div class="s-h">
+      <div><h2>Schüler:innen</h2><div class="sub">${list.length} Schüler:innen insgesamt</div></div>
+    </div>
+    ${list.length === 0 ? emptyBox('🎓', 'Noch keine Schüler:innen', 'Schüler:innen werden über Klassen-Einladungen hinzugefügt.') : `
+      <div class="list-card">
+        ${list.slice(0, 30).map(s => `
+          <div class="list-row">
+            <div class="av-circle">${(s.first_name || '?').charAt(0)}</div>
+            <div class="list-main">
+              <div class="list-title">${s.first_name || ''} ${s.last_name || ''}</div>
+              <div class="list-sub">${s.class_name || '—'} · Klasse ${s.grade || '?'}</div>
+            </div>
+            <div class="list-meta">${s.xp || 0} XP</div>
+            <span class="pill ${s.active ? 'emerald' : 'cream'}">${s.active ? 'aktiv' : 'inaktiv'}</span>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderClasses() {
+  const d = await loadOrCache('classes', '/api/data/school/classes');
+  if (d._error) return errorBox(d._error);
+  const list = d.classes || [];
+  return `
+    <div class="s-h">
+      <div><h2>Klassen</h2><div class="sub">${list.length} aktive Klassen</div></div>
+      <button class="btn btn-emerald" onclick="SR.toast('Klassen werden von Lehrkräften erstellt.', 'error')">Wer kann Klassen erstellen?</button>
+    </div>
+    ${list.length === 0 ? emptyBox('📚', 'Noch keine Klassen', 'Erstelle die erste Klasse oder bitte eine Lehrkraft.') : `
+      <div class="list-card">
+        ${list.map(c => `
+          <div class="list-row">
+            <div class="av-circle" style="background:linear-gradient(135deg,#E8A856,#C77B2C);">📘</div>
+            <div class="list-main">
+              <div class="list-title">${c.name || 'Klasse'}</div>
+              <div class="list-sub">${c.subject || '—'} · ${c.teacher_name || 'Keine Lehrkraft'}</div>
+            </div>
+            <div class="list-meta">${c.student_count || 0} S.</div>
+            <button class="btn btn-cream btn-sm" onclick='showClassDetails(${JSON.stringify(c).replace(/'/g, "&apos;")})'>Details →</button>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderAnalytics() {
+  const d = await loadOrCache('analytics', '/api/data/school/analytics');
+  if (d._error) return errorBox(d._error);
+  const stats = d.stats || {};
+  const subjects = d.by_subject || [];
+  return `
+    <div class="s-h">
+      <div><h2>Schul-<em>Auswertungen</em></h2><div class="sub">Gesamtleistung der Schule</div></div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="label">Aktive Schüler (7T)</div><div class="val">${stats.active_7d || 0}</div></div>
+      <div class="stat-card"><div class="label">Aufgaben gelöst</div><div class="val">${stats.tasks_completed || 0}</div></div>
+      <div class="stat-card"><div class="label">Ø Genauigkeit</div><div class="val"><em>${stats.avg_accuracy || 0}%</em></div></div>
+      <div class="stat-card"><div class="label">Engagement-Rate</div><div class="val">${stats.engagement_pct || 0}%</div></div>
+    </div>
+    ${subjects.length > 0 ? `
+      <div class="card">
+        <div class="card-tag emerald">— Nach Fach</div>
+        <div style="margin-top:14px;">
+          ${subjects.map(s => `
+            <div style="display:flex;align-items:center;gap:14px;padding:8px 0;">
+              <div style="width:120px;font-size:13.5px;font-weight:500;">${s.subject}</div>
+              <div style="flex:1;height:8px;background:var(--cream);border-radius:100px;overflow:hidden;border:1px solid var(--line-soft);">
+                <div style="width:${s.accuracy}%;height:100%;background:linear-gradient(90deg,var(--emerald),#6BD4A0);border-radius:100px;"></div>
+              </div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-mute);width:50px;text-align:right;">${s.accuracy}%</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : ''}
+  `;
+}
+
+async function renderReports() {
+  const d = await loadOrCache('reports', '/api/data/school/reports');
+  if (d._error) return errorBox(d._error);
+  const list = d.reports || [];
+  return `
+    <div class="s-h">
+      <div><h2>Berichte</h2><div class="sub">PDF-Berichte mit aktuellen Schul-Daten</div></div>
+    </div>
+    <div class="list-card">
+      ${list.map(r => `
+        <div class="list-row">
+          <div class="av-circle" style="background:linear-gradient(135deg,#1B6B45,#6BD4A0);">📄</div>
+          <div class="list-main">
+            <div class="list-title">${r.title}</div>
+            <div class="list-sub">${r.period} · ${r.created_at}</div>
+          </div>
+          <a class="btn btn-emerald btn-sm" href="/api/data/school/report-pdf" download>PDF herunterladen ↓</a>
+        </div>
+      `).join('')}
+    </div>
+    <div class="card" style="margin-top:14px;padding:18px 20px;background:var(--cream-2);">
+      <p style="font-size:13px;color:var(--ink-soft);line-height:1.6;margin:0;">
+        Der Bericht wird beim Klick mit den aktuellen Daten deiner Schule erstellt —
+        Lehrkräfte, Schüler:innen, Klassen und durchschnittliche Genauigkeit.
+        Für einen vollständigen Rohdaten-Export nutze
+        <a href="javascript:void(0)" onclick="switchSection('settings');return false;" style="color:var(--emerald);">Einstellungen → Datenexport</a>.
+      </p>
+    </div>
+  `;
+}
+
+async function renderAnnouncements() {
+  const d = await loadOrCache('announcements', '/api/data/school/announcements');
+  if (d._error) return errorBox(d._error);
+  const list = d.announcements || [];
+  return `
+    <div class="s-h">
+      <div><h2>Ankündigungen</h2><div class="sub">An alle Lehrkräfte und Schüler:innen der Schule</div></div>
+      <button class="btn btn-emerald" onclick="SRActions.createAnnouncement([], true)">+ Neu</button>
+    </div>
+    ${list.length === 0 ? emptyBox('📢', 'Keine Ankündigungen', 'Verschicke eine schulweite Ankündigung.') : `
+      <div style="display:flex;flex-direction:column;gap:12px;">
+        ${list.map(a => `
+          <div class="card">
+            <div class="card-tag emerald">— ${a.audience || 'Alle'} · ${a.created_at || ''}</div>
+            <h3 style="font-family:'Fraunces',serif;font-size:19px;font-weight:500;margin-top:8px;">${a.title}</h3>
+            <p style="font-size:14px;color:var(--ink-soft);margin-top:6px;line-height:1.6;">${a.body}</p>
+          </div>
+        `).join('')}
+      </div>
+    `}
+  `;
+}
+
+async function renderSettings() {
+  const d = await loadOrCache('home', '/api/data/school/home');
+  const school = d.school || {};
+  return `
+    <div class="s-h">
+      <div><h2>Einstellungen</h2><div class="sub">Schul-Daten und Konfiguration</div></div>
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— Schul-Daten</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;">
+        <div><div style="font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;">Name</div><div style="font-size:14px;margin-top:4px;">${school.name || '—'}</div></div>
+        <div><div style="font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;">Stadt</div><div style="font-size:14px;margin-top:4px;">${school.city || '—'} ${school.postcode || ''}</div></div>
+        <div><div style="font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;">Tarif</div><div style="font-size:14px;margin-top:4px;">${TIER_NAMES[school.tier] || '—'}</div></div>
+        <div><div style="font-size:11px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;">Status</div><div style="font-size:14px;margin-top:4px;"><span class="pill emerald">${school.status || 'aktiv'}</span></div></div>
+      </div>
+      <div style="margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-outline" onclick="SRActions.changePassword()">Passwort ändern</button>
+        <a href="/preise" class="btn btn-emerald">Tarif ändern</a>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— DSGVO &amp; Sicherheit</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;font-size:13.5px;">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft);"><span>Auftragsverarbeitungsvertrag</span><span class="pill emerald">unterzeichnet</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line-soft);"><span>Datenexport (DSGVO)</span><a href="/api/data/school/export" download style="color:var(--emerald);font-weight:500;">Herunterladen →</a></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;"><span>Schul-Konto löschen</span><a href="javascript:void(0)" onclick="requestAccountDeletion();return false;" style="color:var(--terra);font-weight:500;">Anfragen →</a></div>
+      </div>
+    </div>
+  `;
+}
+
+function emptyBox(icon, title, msg) {
+  return `<div class="card empty-state"><div class="em-icon">${icon}</div><h3>${title}</h3><p>${msg}</p></div>`;
+}
+function errorBox(msg) {
+  return `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Daten konnten nicht geladen werden</h3><p>${msg}</p></div>`;
+}
+
+// ─── School detail view (previously dead "Details" button) ───
+function requestAccountDeletion() {
+  SR.modal({
+    title: 'Schul-Konto löschen',
+    fields: [
+      { name: 'reason', label: 'Grund (optional)', type: 'textarea', placeholder: 'Warum möchtet ihr das Konto löschen?' },
+    ],
+    submitLabel: 'Löschung anfragen',
+    onSubmit: async (data) => {
+      // Send as a message to the platform team
+      const r = await SR.post('/api/data/messages/send', {
+        subject: 'Anfrage: Schul-Konto löschen',
+        body: 'Eine Schule hat die Löschung ihres Kontos angefragt.\nGrund: ' + (data.reason || '(kein Grund angegeben)'),
+      });
+      return {
+        successHtml: `
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:500;margin-bottom:10px;color:#155235;">Anfrage gesendet</div>
+          <div style="font-size:13.5px;line-height:1.5;">Eure Anfrage zur Konto-Löschung wurde übermittelt. Das StudyRace-Team meldet sich innerhalb von 5 Werktagen. Alle Daten werden gemäß DSGVO gelöscht.</div>
+        `,
+      };
+    },
+  });
+}
+
+function showTeacherProfile(t) {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="s-h">
+      <div><div class="page-h-eyebrow">Lehrkraft</div>
+      <h1>${t.first_name || ''} ${t.last_name || ''}</h1></div>
+      <button class="btn btn-cream" onclick="switchSection('teachers')">← Zurück</button>
+    </div>
+    <div class="card" style="padding:26px;">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;">
+        <div class="av-circle" style="width:60px;height:60px;font-size:24px;">${(t.first_name || '?').charAt(0)}</div>
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:500;">${t.first_name || ''} ${t.last_name || ''}</div>
+          <div style="font-size:13px;color:var(--ink-soft);">${t.subject || 'Fach nicht angegeben'}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">E-Mail</span><strong>${t.email || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Fach</span><strong>${t.subject || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Klassen</span><strong>${t.class_count || 0}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="color:var(--ink-mute);">Status</span><strong style="color:var(--emerald);">Aktiv</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+function showClassDetails(c) {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="s-h">
+      <div><div class="page-h-eyebrow">Klasse</div>
+      <h1>${c.name || 'Klasse'}</h1></div>
+      <button class="btn btn-cream" onclick="switchSection('classes')">← Zurück</button>
+    </div>
+    <div class="card" style="padding:26px;">
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Fach</span><strong>${c.subject || '—'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Lehrkraft</span><strong>${c.teacher_name || 'Keine Lehrkraft'}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line-soft);"><span style="color:var(--ink-mute);">Schüler:innen</span><strong>${c.student_count || 0}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:10px 0;"><span style="color:var(--ink-mute);">Klassenstufe</span><strong>${c.grade_level || '—'}</strong></div>
+      </div>
+    </div>
+  `;
+}
+
+function showReportDetail(r) {
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="s-h">
+      <div><div class="page-h-eyebrow">Bericht</div>
+      <h1>${r.title || 'Bericht'}</h1>
+      <div class="sub">${r.period || ''} · erstellt ${r.created_at || ''}</div></div>
+      <button class="btn btn-cream" onclick="switchSection('reports')">← Zurück</button>
+    </div>
+    <div class="card" style="padding:26px;">
+      <p style="font-size:14px;line-height:1.7;color:var(--ink-soft);">
+        Dieser Bericht fasst die Aktivität der Schule für den Zeitraum <strong>${r.period || '—'}</strong> zusammen.
+        Für einen vollständigen Datenexport im JSON-Format nutze bitte
+        <a href="javascript:void(0)" onclick="switchSection('settings');return false;" style="color:var(--emerald);">Einstellungen → Datenexport</a>.
+      </p>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

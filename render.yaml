@@ -1,0 +1,35 @@
+# ════════════════════════════════════════════════════════════
+# Render Blueprint for StudyRace
+# Renders this file automatically when deploying:
+#   1. Creates a free Postgres database
+#   2. Creates the Node web service
+#   3. Wires DATABASE_URL from the DB to the web service
+#   4. Generates a strong random JWT_SECRET
+#   5. Sets NODE_ENV=production
+# The server's on-start auto-init then loads schema + seeds on first run.
+# ════════════════════════════════════════════════════════════
+services:
+  - type: web
+    name: studyrace
+    runtime: node
+    plan: free
+    region: frankfurt          # closest to Germany; remove this line if Render asks
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true     # Render creates a strong random value
+      - key: DATABASE_URL
+        fromDatabase:
+          name: studyrace-db
+          property: connectionString
+
+databases:
+  - name: studyrace-db
+    plan: free
+    databaseName: studyrace
+    user: studyrace
+    region: frankfurt

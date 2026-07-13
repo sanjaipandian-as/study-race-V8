@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lehrer-Dashboard — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+
+<aside id="sidebar">
+  <a href="/" class="sb-logo"><span class="sb-flag"></span> StudyRace</a>
+  <div class="user-card">
+    <div class="user-av">👨‍🏫</div>
+    <div class="user-info">
+      <div class="name" id="sb-name">Lade...</div>
+      <div class="role">Lehrkraft</div>
+    </div>
+  </div>
+  <div class="nav-label">— Unterricht</div>
+  <div class="nav-item active" data-section="overview"><span class="ic">🏠</span> Übersicht</div>
+  <div class="nav-item" data-section="classes"><span class="ic">👥</span> Klassen</div>
+  <div class="nav-item" data-section="assignments"><span class="ic">📝</span> Aufgaben</div>
+  <div class="nav-item" data-section="students"><span class="ic">🎓</span> Schüler-Fortschritt</div>
+  <div class="nav-item" data-section="timetable"><span class="ic">📅</span> Stundenplan</div>
+  <div class="nav-label">— Kommunikation</div>
+  <div class="nav-item" data-section="messages"><span class="ic">✉</span> Nachrichten</div>
+  <div class="nav-item" data-section="announcements"><span class="ic">📢</span> Ankündigungen</div>
+  <div class="nav-item" data-section="materials"><span class="ic">📚</span> Materialien</div>
+  <div class="sidebar-bottom">
+    <div class="nav-item" id="logout-item"><span class="ic">🚪</span> Abmelden</div>
+  </div>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div class="tb-greet">Guten Tag, <em><span id="name-display">…</span></em>.</div>
+    <div class="tb-actions">
+      <input type="text" class="tb-search" placeholder="Suche…">
+      <button class="tb-icon" onclick="SRActions.showNotifications()" title="Benachrichtigungen">🔔</button>
+      <button class="tb-icon" onclick="SRActions.changePassword()" title="Passwort ändern">⚙️</button>
+    </div>
+  </div>
+  <div class="content" id="content">
+    <div class="loading">Lade Daten…</div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="/api.js"></script>
+<script src="/actions.js"></script>
+<script>
+let dataCache = {};
+
+async function init() {
+  const user = await SR.requireRole('teacher');
+  document.getElementById('sb-name').textContent = (user.full_name || user.first_name || 'Lehrkraft');
+  document.getElementById('name-display').textContent = (user.last_name ? 'Hr./Fr. ' + user.last_name : user.full_name || 'Lehrkraft');
+
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    el.onclick = () => switchSection(el.dataset.section);
+  });
+  document.getElementById('logout-item').onclick = async () => { await SR.logout(); SR.go('/'); };
+
+  try {
+    const r = await SR.get('/api/data/teacher/home');
+    dataCache.home = r.data || {};
+  } catch (e) { dataCache.home = {}; }
+
+  switchSection('overview');
+}
+
+async function switchSection(name) {
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => el.classList.toggle('active', el.dataset.section === name));
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade…</div>';
+
+  try {
+    if (name === 'overview')      return content.innerHTML = renderOverview(dataCache.home || {});
+    if (name === 'classes')       return content.innerHTML = renderClasses(dataCache.home || {});
+    if (name === 'assignments')   return content.innerHTML = renderAssignments(await loadOrCache('assignments', '/api/data/teacher/assignments'));
+    if (name === 'students')      return content.innerHTML = renderStudents(await loadOrCache('students', '/api/data/teacher/students'));
+    if (name === 'timetable')     return content.innerHTML = renderTeacherTimetable();
+    if (name === 'messages')      return content.innerHTML = renderMessages(await loadOrCache('messages', '/api/data/teacher/messages'));
+    if (name === 'announcements') return content.innerHTML = renderAnnouncements(await loadOrCache('announcements', '/api/data/teacher/announcements'));
+    if (name === 'materials')     return content.innerHTML = renderMaterials(await loadOrCache('materials', '/api/data/teacher/materials'));
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><div class="em-icon">⚠️</div><h3>Fehler beim Laden</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+async function loadOrCache(key, url) {
+  if (dataCache[key]) return dataCache[key];
+  try {
+    const r = await SR.get(url);
+    if (!r || !r.ok) return { _error: (r && r.data && r.data.error) || 'Daten konnten nicht geladen werden.' };
+    dataCache[key] = r.data || {};
+    return dataCache[key];
+  } catch (e) {
+    return { _error: e.message || 'Verbindungsfehler.' };
+  }
+}
+
+function renderOverview(d) {
+  const classes = d.classes || [];
+  const total = classes.reduce((s, c) => s + (parseInt(c.student_count) || 0), 0);
+  return `
+    <div class="dash-banner">
+      <img src="/images/class-session.jpg" alt="">
+      <div class="banner-inner">
+        <div class="banner-eyebrow">Lehrkraft-Dashboard · ${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <h1>Dein Klassenzimmer, <em>auf einen Blick</em>.</h1>
+        <div class="banner-sub">${classes.length} Klasse${classes.length!==1?'n':''} · ${total} Schüler:innen</div>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card accent-emerald">
+        <div class="stat-icon">📚</div>
+        <div class="label">Klassen</div><div class="val">${classes.length}</div>
+      </div>
+      <div class="stat-card accent-blue">
+        <div class="stat-icon">👥</div>
+        <div class="label">Schüler:innen</div><div class="val">${total}</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-icon">📝</div>
+        <div class="label">Aufgaben offen</div><div class="val"><em>${(d.stats && d.stats.open_tasks) || 0}</em></div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-icon">📊</div>
+        <div class="label">Ø Genauigkeit</div><div class="val">${(d.stats && d.stats.avg_accuracy) || 0}%</div>
+      </div>
+    </div>
+    <div class="s-h"><h2><span class="sec-icon-chip">🚀</span>Schnellzugriff</h2></div>
+    <div class="quick-tiles">
+      <div class="quick-tile" onclick="switchSection('classes')">
+        <div class="qt-icon">📚</div>
+        <div class="qt-title">Klassen</div>
+        <div class="qt-desc">${classes.length} aktive Klasse${classes.length!==1?'n':''} verwalten.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('assignments')">
+        <div class="qt-icon">📝</div>
+        <div class="qt-title">Aufgaben</div>
+        <div class="qt-desc">Aufgaben verteilen und prüfen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('messages')">
+        <div class="qt-icon">✉️</div>
+        <div class="qt-title">Nachrichten</div>
+        <div class="qt-desc">Mit Schüler:innen kommunizieren.</div>
+      </div>
+      <div class="quick-tile" onclick="SRActions.createClass()">
+        <div class="qt-icon">➕</div>
+        <div class="qt-title">Neue Klasse</div>
+        <div class="qt-desc">Eine Klasse anlegen und Code teilen.</div>
+      </div>
+      <div class="quick-tile" onclick="SRActions.createAssignment(dataCache.home && dataCache.home.classes || [])">
+        <div class="qt-icon">🎯</div>
+        <div class="qt-title">Aufgabe verteilen</div>
+        <div class="qt-desc">Übungsfragen einer Klasse zuweisen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('announcements')">
+        <div class="qt-icon">📣</div>
+        <div class="qt-title">Ankündigung</div>
+        <div class="qt-desc">Wichtige Infos an die Klasse senden.</div>
+      </div>
+    </div>
+  `;
+}
+
+function renderClasses(d) {
+  const classes = d.classes || [];
+  return `
+    <div class="s-h"><div><h2>Meine <em>Klassen</em></h2><div class="sub">${classes.length} aktive Klassen</div></div>
+    <button class="btn btn-emerald" onclick="SRActions.createClass()">+ Neue Klasse</button></div>
+    <div class="list-card">
+      ${classes.length === 0 ? `<div class="empty-state"><div class="em-icon">📚</div><h3>Noch keine Klassen</h3><p>Erstelle deine erste Klasse und lade Schüler:innen ein.</p></div>` : classes.map(c => `
+        <div class="list-row">
+          <div class="list-icon emerald">${(c.subject||'?').charAt(0).toUpperCase()}</div>
+          <div class="list-main">
+            <div class="t">${c.name}</div>
+            <div class="d">${c.subject} · Code: <span class="mono">${c.invite_code}</span> · ${c.student_count || 0} Schüler:innen</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn btn-cream btn-sm" onclick="showRace(${c.id}, '${(c.name||'').replace(/'/g,"&apos;")}')">🏁 Rennen</button>
+            <button class="btn btn-cream btn-sm" onclick="showLeaderboard(${c.id}, '${(c.name||'').replace(/'/g,"&apos;")}')">🏆 Rangliste</button>
+            <button class="btn btn-cream btn-sm" onclick="showClassStudents(${c.id}, '${(c.name||'').replace(/'/g,"&apos;")}')">👥 Schüler</button>
+            <button class="btn btn-emerald btn-sm" onclick="SRActions.createStudent([{id:${c.id},name:'${(c.name||'').replace(/'/g,"&apos;")}',subject:'${(c.subject||'').replace(/'/g,"&apos;")}'}])">+ Schüler</button>
+            <button class="btn btn-cream btn-sm" onclick="SRActions.bulkInviteStudents([{id:${c.id},name:'${(c.name||'').replace(/'/g,"&apos;")}'}])">📋 Bulk</button>
+            <button class="btn btn-cream btn-sm" onclick="SRActions.renameClass(${c.id}, '${(c.name||'').replace(/'/g,"&apos;")}')">Umbenennen</button>
+            <button class="btn btn-cream btn-sm" style="color:var(--terra);" onclick="SRActions.deleteClass(${c.id}, '${(c.name||'').replace(/'/g,"&apos;")}')">Löschen</button>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── Live race & leaderboard views ───
+async function showRace(classId, className) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Rennen…</div>';
+  try {
+    const r = await SR.get('/api/data/class/' + classId + '/race');
+    if (!r.ok) throw new Error(r.data.error);
+    const runners = r.data.runners || [];
+    if (runners.length === 0) {
+      content.innerHTML = `
+        <div class="s-h"><div><h2>🏁 Klassenrennen: ${className}</h2></div>
+        <button class="btn btn-cream" onclick="switchSection('classes')">← Zurück</button></div>
+        <div class="card empty-state"><div class="em-icon">🏁</div><h3>Noch keine Läufer</h3><p>Sobald Schüler:innen aktiv sind, beginnt das Rennen.</p></div>
+      `;
+      return;
+    }
+    const colors = ['linear-gradient(90deg,#1B6B45,#6BD4A0)','linear-gradient(90deg,#C77B2C,#E8A856)','linear-gradient(90deg,#5A4A8A,#8E7BC0)','linear-gradient(90deg,#3A8C5A,#6BD4A0)'];
+    content.innerHTML = `
+      <div class="s-h"><div><div class="page-h-eyebrow">Live · aktualisiert sich alle 10 Sekunden</div>
+      <h1>🏁 Klassenrennen: <em>${className}</em></h1></div>
+      <button class="btn btn-cream" onclick="if(window._raceInterval){clearInterval(window._raceInterval);window._raceInterval=null;}switchSection('classes')">← Zurück</button></div>
+      <div class="card" style="padding:24px;">
+        ${runners.map((s, i) => `
+          <div style="display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:${i < runners.length-1 ? '1px solid var(--line-soft)':'none'};">
+            <div style="width:30px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:600;color:${i===0?'#C77B2C':'var(--ink-mute)'};">#${s.rank}</div>
+            <div style="min-width:130px;font-weight:500;">${s.name}</div>
+            <div style="flex:1;height:10px;background:var(--cream);border-radius:100px;border:1px solid var(--line-soft);overflow:hidden;">
+              <div style="height:100%;width:${s.position_pct}%;background:${colors[i%4]};border-radius:100px;transition:width 1s ease;"></div>
+            </div>
+            <div style="width:70px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;">${s.xp} XP</div>
+            <div style="width:50px;text-align:right;font-size:12px;color:var(--ink-mute);">${s.streak ? s.streak + '🔥' : ''}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    // Auto-refresh every 10s while on this view
+    if (window._raceInterval) clearInterval(window._raceInterval);
+    window._raceInterval = setInterval(() => showRace(classId, className), 10000);
+  } catch (e) {
+    content.innerHTML = `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Fehler</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+async function showLeaderboard(classId, className) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Rangliste…</div>';
+  try {
+    const r = await SR.get('/api/data/class/' + classId + '/leaderboard');
+    if (!r.ok) throw new Error(r.data.error);
+    const board = r.data.leaderboard || [];
+    content.innerHTML = `
+      <div class="s-h"><div><div class="page-h-eyebrow">Rangliste</div>
+      <h1>🏆 Top-Schüler:innen: <em>${className}</em></h1></div>
+      <button class="btn btn-cream" onclick="switchSection('classes')">← Zurück</button></div>
+      <div class="list-card">
+        ${board.length === 0 ? '<div class="empty-state"><div class="em-icon">🏆</div><h3>Noch keine Daten</h3></div>' : board.map((s, i) => `
+          <div class="list-row">
+            <div class="list-icon ${i<3?'emerald':''}" style="background:${i===0?'#E8A856':i===1?'#bbb':i===2?'#C8975C':''};">${i+1}</div>
+            <div class="list-main">
+              <div class="t">${s.full_name || 'Schüler'}</div>
+              <div class="d">${s.streak || 0} Tage Streak</div>
+            </div>
+            <div class="list-meta" style="font-family:'JetBrains Mono',monospace;color:${i===0?'#C77B2C':'var(--ink)'};font-weight:${i===0?'600':'500'};">${s.xp} XP</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Fehler</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+// ─── Class students list with click-to-progress ───
+async function showClassStudents(classId, className) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Schüler:innen…</div>';
+  try {
+    const r = await SR.get('/api/data/teacher/class/' + classId + '/students');
+    if (!r.ok) throw new Error(r.data.error);
+    const students = r.data.students || [];
+    content.innerHTML = `
+      <div class="s-h"><div><div class="page-h-eyebrow">${className}</div>
+      <h1>👥 Schüler:innen <span style="color:var(--ink-mute);font-weight:400;">(${students.length})</span></h1></div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-emerald" onclick="SRActions.createStudent([{id:${classId},name:'${className.replace(/'/g,"&apos;")}',subject:''}])">+ Anlegen</button>
+        <button class="btn btn-cream" onclick="switchSection('classes')">← Zurück</button>
+      </div></div>
+      <input id="student-search" placeholder="🔍 Schüler suchen..."
+             style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:var(--cream-2);font-family:inherit;font-size:14px;margin-bottom:12px;outline:none;">
+      <div class="list-card" id="student-list">
+        ${students.length === 0 ? '<div class="empty-state"><div class="em-icon">👥</div><h3>Noch keine Schüler:innen</h3><p>Klicke „+ Anlegen" oder gib den Einladungscode weiter.</p></div>' : students.map(s => `
+          <div class="list-row student-row" onclick="showStudentProgress(${s.id}, '${(s.full_name||'').replace(/'/g,"&apos;")}', '${className.replace(/'/g,"&apos;")}')" style="cursor:pointer;">
+            <div class="av-circle">${(s.full_name||'S').charAt(0).toUpperCase()}</div>
+            <div class="list-main">
+              <div class="t">${s.full_name || s.email}</div>
+              <div class="d">${s.email} · ${s.streak || 0} Tage Streak</div>
+            </div>
+            <div class="list-meta" style="font-family:'JetBrains Mono',monospace;">${s.xp} XP</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    SRActions.attachSearch('student-search', '.student-row');
+  } catch (e) {
+    content.innerHTML = `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Fehler</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+// ─── Per-student progress / analytics ───
+async function showStudentProgress(studentId, studentName, className) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Fortschritt…</div>';
+  try {
+    const r = await SR.get('/api/data/teacher/student/' + studentId + '/progress');
+    if (!r.ok) throw new Error(r.data.error);
+    const d = r.data;
+    const accuracy = d.total_answered > 0 ? Math.round(d.total_correct / d.total_answered * 100) : 0;
+    content.innerHTML = `
+      <div class="s-h">
+        <div>
+          <div class="page-h-eyebrow">Analytics · ${className}</div>
+          <h1>${d.user.full_name || d.user.email}</h1>
+          <div class="sub">${d.user.email}</div>
+        </div>
+        <button class="btn btn-cream" onclick="switchSection('classes')">← Zurück</button>
+      </div>
+
+      <div class="stats-row" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+        <div class="stat-card"><div class="val">${d.progress.total_xp || 0}</div><div class="label">TOTAL XP</div></div>
+        <div class="stat-card"><div class="val">${d.progress.current_streak || 0}</div><div class="label">STREAK (TAGE)</div></div>
+        <div class="stat-card"><div class="val">${d.total_answered}</div><div class="label">FRAGEN BEANTWORTET</div></div>
+        <div class="stat-card"><div class="val">${accuracy}%</div><div class="label">GENAUIGKEIT</div></div>
+      </div>
+
+      ${d.by_subject.length === 0 ? `
+        <div class="card empty-state"><div class="em-icon">📊</div><h3>Noch keine Übungsdaten</h3><p>Die Schüler:in hat noch keine Fragen beantwortet.</p></div>
+      ` : d.by_subject.map(sub => `
+        <div class="card" style="padding:20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div>
+              <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:500;">${sub.subject}</h3>
+              <div style="font-size:12px;color:var(--ink-mute);">${sub.answered} Fragen · ${sub.answered ? Math.round(sub.correct/sub.answered*100) : 0}% richtig</div>
+            </div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:var(--emerald);font-weight:500;">${sub.avg_skill}/5.0</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            ${sub.topics.map(t => {
+              const pct = t.skill * 20; // 0-5 -> 0-100
+              const acc = t.answered > 0 ? Math.round(t.correct/t.answered*100) : 0;
+              return `
+                <div style="display:flex;align-items:center;gap:10px;padding:6px 0;">
+                  <div style="width:140px;font-size:13px;">${t.topic}</div>
+                  <div style="flex:1;height:8px;background:var(--cream);border-radius:100px;overflow:hidden;">
+                    <div style="height:100%;width:${pct}%;background:linear-gradient(90deg,var(--emerald),#6BD4A0);"></div>
+                  </div>
+                  <div style="width:50px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);">${t.skill.toFixed(1)}</div>
+                  <div style="width:70px;text-align:right;font-size:11px;color:var(--ink-mute);">${acc}% · ${t.answered}</div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `).join('')}
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Fehler</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+function renderAssignments(d) {
+  const items = d.assignments || [];
+  return `
+    <div class="s-h"><div><h2>Aufgaben</h2><div class="sub">${items.length} verteilte Aufgaben</div></div>
+    <button class="btn btn-emerald" onclick="SRActions.createAssignment(dataCache.home && dataCache.home.classes || [])">+ Neue Aufgabe</button></div>
+    <div class="list-card">
+      ${items.map(a => {
+        const pct = a.total ? Math.round((a.submitted / a.total) * 100) : 0;
+        return `
+          <div class="list-row">
+            <div class="list-icon ${pct >= 80 ? 'emerald' : pct >= 50 ? 'amber' : 'terra'}">${pct}%</div>
+            <div class="list-main">
+              <div class="t">${a.title}</div>
+              <div class="d">${a.class_name} · Fällig ${a.due_at}</div>
+            </div>
+            <div class="list-meta">${a.submitted} / ${a.total} eingereicht</div>
+            <button class="btn btn-cream btn-sm" onclick="SRActions.attachQuestions(${a.id}, '${(a.title || '').replace(/'/g, '&apos;')}')">🎯 Fragen</button>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderStudents(d) {
+  const list = d.students || [];
+  return `
+    <div class="s-h"><div><h2>Schüler:innen-<em>Fortschritt</em></h2><div class="sub">${list.length} Schüler:innen</div></div></div>
+    <div class="list-card">
+      ${list.map(s => `
+        <div class="list-row">
+          <div class="list-icon ${s.flag === 'Mühe' ? 'terra' : s.flag === 'stark' ? 'emerald' : ''}">${(s.name || '?').charAt(0)}</div>
+          <div class="list-main">
+            <div class="t">${s.name} ${s.flag === 'Mühe' ? '<span class="pill terra" style="margin-left:8px;">braucht Hilfe</span>' : s.flag === 'stark' ? '<span class="pill emerald" style="margin-left:8px;">stark</span>' : ''}</div>
+            <div class="d">Klasse ${s.class} · ${s.accuracy}% Genauigkeit · ${s.streak} Tage Streak</div>
+          </div>
+          <div class="list-meta">${s.last_active}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderMessages(d) {
+  const msgs = d.messages || [];
+  return `
+    <div class="s-h"><div><h2>Nachrichten</h2><div class="sub">${msgs.filter(m=>m.unread).length} ungelesen</div></div>
+    <button class="btn btn-emerald" onclick="SRActions.sendMessage('teacher')">+ Neue Nachricht</button></div>
+    <div class="list-card">
+      ${msgs.map(m => `
+        <div class="message-row ${m.unread ? 'unread' : ''}">
+          <div class="from-av">${m.from.charAt(0)}</div>
+          <div>
+            <div class="msg-from">${m.from}${m.unread ? '<span class="dot-unread"></span>':''}</div>
+            <div class="msg-subj">${m.subject}</div>
+            <div class="msg-prev">${m.preview}</div>
+          </div>
+          <div class="msg-time">${m.time}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderAnnouncements(d) {
+  const items = d.announcements || [];
+  return `
+    <div class="s-h"><div><h2>Ankündigungen</h2></div>
+    <button class="btn btn-emerald" onclick="SRActions.createAnnouncement(dataCache.home && dataCache.home.classes || [], false)">+ Neue Ankündigung</button></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      ${items.map(a => `
+        <div class="card">
+          <div class="card-tag emerald">— ${a.class_name} · ${a.published_at}</div>
+          <h3 style="font-family:'Fraunces',serif;font-weight:500;font-size:20px;margin:6px 0 10px;">${a.title}</h3>
+          <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;">${a.body}</p>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderMaterials(d) {
+  const items = d.materials || [];
+  const ic = { pdf: '📄', video: '🎬', docx: '📝', pool: '📚' };
+  return `
+    <div class="s-h"><div><h2>Materialien</h2></div>
+    <button class="btn btn-emerald" onclick="SRActions.addMaterial(dataCache.home && dataCache.home.classes || [])">+ Material</button></div>
+    <div class="list-card">
+      ${items.map(m => `
+        <div class="list-row">
+          <div class="list-icon">${ic[m.type] || '📄'}</div>
+          <div class="list-main">
+            <div class="t">${m.title}</div>
+            <div class="d">${m.subject} · ${m.type.toUpperCase()}</div>
+          </div>
+          <div class="list-meta">${m.size || (m.count + ' Items')}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+// ─── Teacher timetable — built from the teacher's classes ───
+function renderTeacherTimetable() {
+  const classes = (dataCache.home && dataCache.home.classes) || [];
+  const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag'];
+  const times = ['08:00', '09:00', '10:00', '11:00', '12:00'];
+
+  if (classes.length === 0) {
+    return `
+      <div class="s-h"><div><h2>Mein <em>Stundenplan</em></h2><div class="sub">Diese Woche</div></div></div>
+      <div class="card empty-state"><div class="em-icon">📅</div><h3>Noch kein Stundenplan</h3>
+      <p>Sobald du Klassen angelegt hast, erscheinen sie hier in deinem Wochenplan.</p></div>
+    `;
+  }
+
+  // Spread the teacher's classes across the week deterministically
+  const colors = ['#1B6B45', '#C77B2C', '#5A4A8A', '#3A6B8C', '#3A8C5A'];
+  let cells = {};
+  classes.forEach((c, i) => {
+    // each class gets 2 slots in the week
+    for (let s = 0; s < 2; s++) {
+      const slot = (i * 2 + s) % (days.length * times.length);
+      const day = slot % days.length;
+      const time = Math.floor(slot / days.length) % times.length;
+      cells[day + '-' + time] = { name: c.name, subject: c.subject, color: colors[i % colors.length] };
+    }
+  });
+
+  return `
+    <div class="s-h"><div><h2>Mein <em>Stundenplan</em></h2><div class="sub">Wochenübersicht deiner Klassen</div></div></div>
+    <div class="card" style="padding:18px;overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;min-width:560px;">
+        <thead>
+          <tr>
+            <th style="padding:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-mute);text-align:left;"></th>
+            ${days.map(d => `<th style="padding:8px;font-family:'Fraunces',serif;font-size:14px;font-weight:500;">${d}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${times.map((t, ti) => `
+            <tr>
+              <td style="padding:8px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);">${t}</td>
+              ${days.map((d, di) => {
+                const cell = cells[di + '-' + ti];
+                if (cell) {
+                  return `<td style="padding:4px;">
+                    <div style="background:${cell.color};color:white;border-radius:8px;padding:8px 10px;font-size:12px;">
+                      <div style="font-weight:600;">${cell.name}</div>
+                      <div style="opacity:0.85;font-size:10.5px;">${cell.subject}</div>
+                    </div>
+                  </td>`;
+                }
+                return `<td style="padding:4px;"><div style="background:var(--cream);border-radius:8px;padding:8px;min-height:38px;"></div></td>`;
+              }).join('')}
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="card" style="margin-top:12px;padding:14px 18px;background:var(--cream-2);">
+      <p style="font-size:12.5px;color:var(--ink-soft);margin:0;line-height:1.5;">
+        Dieser Stundenplan wird automatisch aus deinen Klassen erstellt. Eine manuelle Bearbeitung
+        der Zeiten ist in einer späteren Version geplant.
+      </p>
+    </div>
+  `;
+}
+
+init();
+</script>
+</body>
+</html>

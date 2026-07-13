@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anmelden — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+body { background: var(--cream); min-height: 100vh; display: flex; flex-direction: column; }
+.login-page { flex: 1; display: grid; grid-template-columns: 1fr 1fr; min-height: calc(100vh - 80px); }
+
+.login-visual {
+  background: linear-gradient(140deg, var(--ink) 0%, #0f1610 100%);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 60px;
+  color: var(--cream-2);
+}
+.login-visual::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 600px 400px at 30% 20%, rgba(27,107,69,0.18), transparent);
+}
+.login-visual > * { position: relative; z-index: 2; }
+.login-visual .logo { color: var(--cream-2); margin-bottom: 50px; }
+.login-visual h2 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: clamp(28px, 3vw, 36px); line-height: 1.15;
+  letter-spacing: -0.02em; margin-bottom: 22px;
+}
+.login-visual h2 em { font-style: italic; color: #6BD4A0; }
+.login-visual p { font-size: 16px; color: rgba(251,248,242,0.7); line-height: 1.6; max-width: 380px; margin-bottom: auto; }
+.preview-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 18px 20px;
+  backdrop-filter: blur(20px);
+}
+.preview-card .pc-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: #6BD4A0; margin-bottom: 10px;
+}
+.preview-card .pc-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.preview-card .pc-stat { }
+.preview-card .pc-stat .v { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 500; }
+.preview-card .pc-stat .v em { font-style: italic; color: #6BD4A0; }
+.preview-card .pc-stat .l { font-size: 11.5px; color: rgba(255,255,255,0.5); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+.login-form-side {
+  background: var(--cream-2);
+  display: flex; align-items: center; justify-content: center;
+  padding: 50px 32px;
+}
+.login-form {
+  width: 100%; max-width: 420px;
+}
+.back-link {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-mute); display: inline-block; margin-bottom: 36px;
+}
+.back-link:hover { color: var(--ink); }
+.login-form h1 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 36px; line-height: 1.1; letter-spacing: -0.025em;
+  margin-bottom: 12px;
+}
+.login-form h1 em { font-style: italic; color: var(--emerald); }
+.login-form .sub { font-size: 15px; color: var(--ink-soft); margin-bottom: 32px; }
+
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-mute); font-weight: 500; margin-bottom: 8px;
+}
+.field input {
+  width: 100%; padding: 12px 14px;
+  border: 1px solid var(--line-soft); border-radius: 10px;
+  background: white; font-family: inherit; font-size: 15px;
+  color: var(--ink); outline: none; transition: border-color 0.15s;
+}
+.field input:focus { border-color: var(--emerald); }
+
+.remember { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); margin-bottom: 22px; }
+.remember input { width: auto; }
+
+.form-msg {
+  padding: 11px 14px; border-radius: 10px;
+  font-size: 13.5px; margin-bottom: 16px; display: none;
+}
+.form-msg.error { background: #FCE6E6; color: #B85537; border: 1px solid #F0DACE; }
+
+.divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 28px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-mute);
+}
+.divider::before, .divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--line-soft);
+}
+.signup-line { font-size: 14px; color: var(--ink-soft); text-align: center; }
+.signup-line a { color: var(--emerald); font-weight: 500; }
+
+.role-info {
+  margin-top: 18px; padding: 14px 16px;
+  background: var(--cream); border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  font-size: 12.5px; color: var(--ink-soft); line-height: 1.55;
+}
+.role-info strong { color: var(--ink); }
+
+@media (max-width: 900px) {
+  .login-page { grid-template-columns: 1fr; }
+  .login-visual { padding: 40px; min-height: auto; }
+  .login-visual p { margin-bottom: 30px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta">
+      <a href="/login" class="btn btn-emerald current">Anmelden</a>
+    </div>
+  </div>
+</nav>
+
+<div class="login-page">
+  <div class="login-visual">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <h2>Eine Anmeldung für <em>alle Rollen</em>.</h2>
+    <p>StudyRace erkennt automatisch, ob du Schüler:in, Lehrkraft, Schul-Verwaltung oder Admin bist — und bringt dich zur richtigen Seite.</p>
+    <div class="preview-card">
+      <div class="pc-tag">🌐 Plattform · live</div>
+      <div class="pc-grid">
+        <div class="pc-stat"><div class="v"><em>1</em></div><div class="l">Schule</div></div>
+        <div class="pc-stat"><div class="v">3</div><div class="l">In Bewerbung</div></div>
+        <div class="pc-stat"><div class="v">99.9%</div><div class="l">Verfügbarkeit</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="login-form-side">
+    <div class="login-form">
+      <a href="/" class="back-link">← Zur Startseite</a>
+      <h1>Willkommen <em>zurück</em>.</h1>
+      <p class="sub">Melde dich mit deiner E-Mail und deinem Passwort an. Die Rolle wird automatisch erkannt.</p>
+
+      <div class="form-msg error" id="form-error"></div>
+
+      <form onsubmit="return doLogin(event)">
+        <div class="field">
+          <label for="email">E-Mail</label>
+          <input type="email" id="email" name="email" required placeholder="name@schule.de" autocomplete="email">
+        </div>
+        <div class="field">
+          <label for="password">Passwort</label>
+          <div style="position:relative;">
+            <input type="password" id="password" name="password" required placeholder="••••••••" autocomplete="current-password" style="padding-right:44px;">
+            <button type="button" id="pw-toggle" aria-label="Passwort anzeigen"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;font-size:16px;padding:6px;color:var(--ink-mute);line-height:1;">
+              👁
+            </button>
+          </div>
+        </div>
+        <div class="remember">
+          <label><input type="checkbox" id="remember"> Angemeldet bleiben</label>
+          <a href="/forgot-password" style="margin-left:auto; color:var(--ink-soft); font-size:13px;">Passwort vergessen?</a>
+        </div>
+        <button type="submit" class="btn btn-emerald btn-lg" style="width:100%; justify-content:center;" id="login-btn">
+          Anmelden <span class="arrow">→</span>
+        </button>
+      </form>
+
+      <div class="role-info">
+        <strong>Hinweis zur automatischen Rollen-Erkennung:</strong> Wir erkennen anhand deiner E-Mail-Adresse, ob du Schüler:in, Lehrkraft, Schul-Verwaltung oder Admin bist. Du wirst nach dem Login zur richtigen Seite weitergeleitet.
+      </div>
+
+      <div class="divider">oder</div>
+
+      <div class="signup-line">
+        Noch kein Konto? <a href="/kontakt">Schule anmelden</a> · Bist du Schüler:in mit Einladungscode? <a href="/auth/student.html">Klassencode eingeben</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/api.js"></script>
+<script>
+// Password show/hide toggle
+(function () {
+  const toggle = document.getElementById('pw-toggle');
+  const pw = document.getElementById('password');
+  if (toggle && pw) {
+    toggle.addEventListener('click', () => {
+      const showing = pw.type === 'text';
+      pw.type = showing ? 'password' : 'text';
+      toggle.textContent = showing ? '👁' : '🙈';
+      toggle.setAttribute('aria-label', showing ? 'Passwort anzeigen' : 'Passwort verbergen');
+      pw.focus();
+    });
+  }
+})();
+
+async function doLogin(e) {
+  e.preventDefault();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl = document.getElementById('form-error');
+  const btn = document.getElementById('login-btn');
+
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = 'Anmeldung läuft…';
+
+  try {
+    const r = await SR.login(email, password);
+    btn.disabled = false;
+    btn.innerHTML = 'Anmelden <span class="arrow">→</span>';
+
+    if (!r.ok) {
+      errEl.textContent = (r.data && r.data.error) || 'Anmeldung fehlgeschlagen';
+      errEl.style.display = 'block';
+      return false;
+    }
+    // Server returns role-specific redirect — go there
+    SR.go(r.data.redirect || '/dashboard');
+  } catch (err) {
+    btn.disabled = false;
+    btn.innerHTML = 'Anmelden <span class="arrow">→</span>';
+    errEl.textContent = err.message || 'Verbindungsfehler';
+    errEl.style.display = 'block';
+  }
+  return false;
+}
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}</script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

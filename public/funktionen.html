@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Funktionen — StudyRace</title>
+<meta name="description" content="Adaptive Aufgaben, Klassenrennen, Lehrer-Dashboard, Fokus-Modus — alles was StudyRace kann.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.page-hero { background: var(--cream); padding: 90px 0 70px; border-bottom: 1px solid var(--line-soft); }
+.page-hero .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--emerald); font-weight: 500; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.page-hero .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--emerald); }
+.page-hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: clamp(38px, 4.5vw, 56px);
+  line-height: 1.05; letter-spacing: -0.025em;
+  margin-bottom: 22px; max-width: 700px;
+}
+.page-hero h1 em { font-style: italic; color: var(--emerald); }
+.page-hero p { font-size: 18px; color: var(--ink-soft); max-width: 620px; line-height: 1.6; }
+
+.feature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 70px; align-items: center; margin-bottom: 90px; }
+.feature-row:last-child { margin-bottom: 0; }
+.feature-row.reverse { direction: rtl; }
+.feature-row.reverse > * { direction: ltr; }
+.feature-row .badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--emerald); font-weight: 500; margin-bottom: 14px;
+}
+.feature-row h3 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 30px; line-height: 1.15; letter-spacing: -0.02em;
+  margin-bottom: 16px;
+}
+.feature-row h3 em { font-style: italic; color: var(--emerald); }
+.feature-row p { font-size: 16px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 20px; }
+.feature-row ul { list-style: none; padding: 0; }
+.feature-row ul li { font-size: 14.5px; color: var(--ink-soft); padding: 6px 0 6px 26px; position: relative; }
+.feature-row ul li::before { content: '✓'; position: absolute; left: 0; color: var(--emerald); font-weight: 700; }
+.feature-row .img { border-radius: 16px; overflow: hidden; aspect-ratio: 4/3; }
+.feature-row .img img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 900px) {
+  .feature-row { grid-template-columns: 1fr; gap: 40px; margin-bottom: 60px; }
+  .feature-row.reverse { direction: ltr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen" class="current">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="eyebrow">Funktionen</div>
+    <h1>Alles, was StudyRace <em>kann</em>.</h1>
+    <p>Adaptive Aufgaben. Live-Klassenrennen. Lehrer-Dashboard mit Echtzeit-Übersicht. DSGVO-konform und in Deutschland gehostet.</p>
+  </div>
+</section>
+
+<section class="section paper">
+  <div class="container">
+
+    <div class="feature-row">
+      <div class="img"><img src="/images/classroom-hands.jpg" alt="Klassenzimmer mit aufgezeigten Händen"></div>
+      <div>
+        <div class="badge">/ 01 — Adaptive Aufgaben</div>
+        <h3>Aufgaben, die mit der <em>Klasse mitwachsen</em>.</h3>
+        <p>Jede Aufgabe passt sich automatisch dem Niveau jedes Schülers an. Wer schneller versteht, bekommt schwerere Beispiele. Wer Mühe hat, bekommt einfachere Schritte und mehr Erklärungen.</p>
+        <ul>
+          <li>Lehrplan-konform für Klassen 5–10</li>
+          <li>Aufgaben-Bibliothek mit 1.000+ Vorlagen</li>
+          <li>Individueller Schwierigkeitsgrad pro Schüler</li>
+          <li>Sofortiges Feedback nach jeder Antwort</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="img"><img src="/images/boy-focused.jpg" alt="Junge Schüler beim Lernen"></div>
+      <div>
+        <div class="badge">/ 02 — Fokus-Modus</div>
+        <h3>Lernen ohne <em>Ablenkung</em>.</h3>
+        <p>Der Fokus-Modus blockt Benachrichtigungen für 25 Minuten. Während dieser Zeit verdienen Schüler:innen Bonus-XP für ungestörtes Arbeiten — ein freundlicher Anreiz, dranzubleiben.</p>
+        <ul>
+          <li>25-Minuten-Pomodoro-Timer</li>
+          <li>+25 Bonus-XP für ungestörtes Lernen</li>
+          <li>Optional in Klassenstunden aktivierbar</li>
+          <li>Pausen werden automatisch eingeplant</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature-row">
+      <div class="img"><img src="/images/student-focused.jpg" alt="Konzentrierte Schülerin"></div>
+      <div>
+        <div class="badge">/ 03 — Klassenrennen</div>
+        <h3>Fortschritt bringt die <em>Klasse zusammen</em>.</h3>
+        <p>Jede richtige Antwort gibt XP und schiebt den Avatar im Klassenrennen voran. Es ist freundschaftlich, nicht aggressiv — und es funktioniert: Schüler kommen freiwillig zurück, weil die Klasse auf sie wartet.</p>
+        <ul>
+          <li>Live-Klassenrennen in Echtzeit</li>
+          <li>XP, Streaks und kosmetische Belohnungen</li>
+          <li>Keine Pay-to-Win-Mechaniken</li>
+          <li>Werbefrei, keine In-App-Käufe</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="img"><img src="/images/teacher.jpg" alt="Lehrkraft im Klassenzimmer"></div>
+      <div>
+        <div class="badge">/ 04 — Lehrer-Dashboard</div>
+        <h3>Echtzeit-<em>Übersicht</em> ohne Aufwand.</h3>
+        <p>Die Lehrkraft sieht live, wer fliegt und wer Mühe hat. Aufgaben verteilen geht in 30 Sekunden. Ein persönlicher Hinweis an einen Schüler ist ein Klick. Mehr Unterricht, weniger Verwaltung.</p>
+        <ul>
+          <li>Live-Klassenüberblick</li>
+          <li>Aufgaben in 30 Sek verteilen</li>
+          <li>Toolbox-Zugriff steuern (Taschenrechner, Übersetzer)</li>
+          <li>Persönliche Hinweise an Einzelne</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature-row">
+      <div class="img"><img src="/images/boys-laptop.jpg" alt="Schüler:innen am Laptop"></div>
+      <div>
+        <div class="badge">/ 05 — Wiki &amp; Neugier-Module</div>
+        <h3>Wenn Mathe fertig ist, <em>geht's weiter</em>.</h3>
+        <p>Wer eine Aufgabe geschafft hat, schaltet ein Neugier-Modul frei: Astronomie, Musik-Theorie, Geschichte hinter dem Schulstoff. Lernen über das Pflichtthema hinaus — freiwillig, weil's spannend ist.</p>
+        <ul>
+          <li>Lehrplan-passende Wiki-Artikel</li>
+          <li>Visuelle Erklärungen, kurze Videos</li>
+          <li>Optionale Vertiefungsmodule</li>
+          <li>Kuratiert, keine offenen Wikis</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="feature-row reverse">
+      <div class="img"><img src="/images/study-materials.jpg" alt="Lernmaterialien"></div>
+      <div>
+        <div class="badge">/ 06 — DSGVO &amp; Sicherheit</div>
+        <h3>Daten bleiben <em>in Deutschland</em>.</h3>
+        <p>Alle Daten werden auf deutschen Servern gehostet, verschlüsselt gespeichert und übertragen. Geschlossene Klassen — niemand von außerhalb kann Schüler:innen kontaktieren oder Daten sehen.</p>
+        <ul>
+          <li>Server in Deutschland (Netcup, Frankfurt)</li>
+          <li>DSGVO &amp; KMK-Datenschutz-konform</li>
+          <li>Auftragsverarbeitungsvertrag (AVV) inklusive</li>
+          <li>Keine externen Tracker, keine Werbung</li>
+        </ul>
+        <a href="/sicherheit" class="card-cta" style="display:inline-block;margin-top:8px;">Alles zur Sicherheit →</a>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section class="section dark">
+  <div class="container" style="text-align:center;">
+    <h2 class="section-title">Bereit, das auszuprobieren?</h2>
+    <p class="section-sub" style="margin-left:auto; margin-right:auto;">4 Wochen kostenlos. Keine Kreditkarte, keine Bindung.</p>
+    <div style="display:flex; justify-content:center; gap:12px; flex-wrap:wrap;">
+      <a href="/login" class="btn btn-lg" style="background:var(--cream-2); color:var(--ink);">Kostenlos starten <span class="arrow">→</span></a>
+      <a href="/kontakt" class="btn btn-lg" style="background:transparent; color:white; border:1.5px solid rgba(255,255,255,0.3);">Kontakt aufnehmen</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+        <p>Die adaptive Lernplattform, gebaut für deutsche Klassenzimmer. In Deutschland gehostet.</p>
+      </div>
+      <div class="footer-col">
+        <h6>Plattform</h6>
+        <a href="/funktionen">Funktionen</a>
+        <a href="/login">Anmelden</a>
+        <a href="/kontakt">Kontakt</a>
+        <a href="/preise" class="footer-pricing-link">Preise</a>
+      </div>
+      <div class="footer-col">
+        <h6>Anmelden als</h6>
+        <a href="/login">Schüler:in</a>
+        <a href="/login">Lehrkraft</a>
+        <a href="/login">Schul-Verwaltung</a>
+        <a href="/login">Admin</a>
+      </div>
+      <div class="footer-col">
+        <h6>Unternehmen</h6>
+        <a href="/ueber-uns">Über uns</a>
+        <a href="/kontakt">Kontakt</a>
+      </div>
+      <div class="footer-col">
+        <h6>Rechtliches</h6>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+        <a href="/agb">AGB</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 StudyRace · In Deutschland gemacht 🇩🇪</div>
+      <div>studyrace.de</div>
+    </div>
+  </div>
+</footer>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}</script>
+<script src="/api.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

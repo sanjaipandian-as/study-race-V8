@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preise — StudyRace</title>
+<meta name="description" content="Pauschalpreis pro Schule, nicht pro Schüler. Ab 0 € im Monat.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.page-hero { background: var(--cream-2); padding: 80px 0 50px; border-bottom: 1px solid var(--line-soft); }
+.page-hero .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-mute); font-weight: 500; margin-bottom: 16px;
+}
+.page-hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: clamp(34px, 4vw, 46px);
+  line-height: 1.1; letter-spacing: -0.02em;
+  margin-bottom: 18px; max-width: 720px;
+  color: var(--ink-soft);
+}
+.page-hero h1 em { font-style: italic; color: var(--emerald); font-weight: 500; }
+.page-hero p { font-size: 16px; color: var(--ink-mute); max-width: 580px; line-height: 1.6; }
+
+.pricing-section { padding: 60px 0 90px; background: var(--cream-2); }
+.pricing-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.price-card {
+  background: var(--paper);
+  border: 1px solid var(--line-soft);
+  border-radius: 14px;
+  padding: 28px 24px;
+  display: flex; flex-direction: column;
+  transition: all 0.2s;
+}
+.price-card:hover {
+  border-color: var(--line);
+  transform: translateY(-2px);
+}
+.price-card.featured {
+  border: 1.5px solid var(--emerald);
+  background: var(--paper);
+}
+.price-card.featured::before {
+  content: 'EMPFOHLEN';
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  color: var(--emerald);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.price-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-mute); font-weight: 500;
+  margin-bottom: 14px;
+}
+.price-amt { display: flex; align-items: baseline; gap: 4px; margin-bottom: 4px; }
+.price-num {
+  font-family: 'Fraunces', serif; font-weight: 400;
+  font-size: 38px; line-height: 1;
+  letter-spacing: -0.025em; color: var(--ink);
+}
+.price-card.featured .price-num { color: var(--emerald); font-style: italic; }
+.price-period { font-size: 13px; color: var(--ink-mute); }
+.price-target {
+  font-size: 13px; color: var(--ink-soft);
+  margin-bottom: 20px; padding-bottom: 20px;
+  border-bottom: 1px solid var(--line-soft);
+}
+.price-feats { list-style: none; flex: 1; margin-bottom: 22px; }
+.price-feats li {
+  font-size: 13px; color: var(--ink-soft);
+  padding: 5px 0 5px 20px; position: relative;
+}
+.price-feats li::before {
+  content: '·'; position: absolute; left: 6px;
+  color: var(--ink-mute); font-size: 18px; line-height: 1;
+}
+.price-cta {
+  display: block; text-align: center;
+  padding: 10px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 500;
+  background: transparent; color: var(--ink);
+  border: 1px solid var(--line);
+  transition: all 0.15s;
+}
+.price-cta:hover { border-color: var(--ink); background: var(--ink); color: var(--cream-2); }
+.price-card.featured .price-cta {
+  background: var(--emerald); color: white; border-color: var(--emerald);
+}
+.price-card.featured .price-cta:hover { background: var(--emerald-2); }
+
+.pricing-note {
+  margin-top: 36px; font-size: 13.5px;
+  color: var(--ink-mute); text-align: center;
+}
+.pricing-note strong { color: var(--ink-soft); }
+
+.faq-section { padding: 80px 0; background: var(--cream); border-top: 1px solid var(--line-soft); }
+.faq-item { border-bottom: 1px solid var(--line-soft); padding: 22px 0; cursor: pointer; }
+.faq-item:first-child { padding-top: 0; }
+.faq-q {
+  display: flex; align-items: center; justify-content: space-between; gap: 24px;
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: 18px; letter-spacing: -0.01em; line-height: 1.3;
+  color: var(--ink);
+}
+.faq-toggle {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--cream-2); border: 1px solid var(--line-soft);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; transition: all 0.25s; flex-shrink: 0; color: var(--ink-soft);
+}
+.faq-item.open .faq-toggle { background: var(--emerald); border-color: var(--emerald); color: white; transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden;
+  transition: max-height 0.35s, margin 0.3s, opacity 0.3s;
+  font-size: 14.5px; color: var(--ink-soft); line-height: 1.7; opacity: 0;
+}
+.faq-item.open .faq-a { max-height: 280px; margin-top: 12px; opacity: 1; }
+
+@media (max-width: 900px) {
+  .pricing-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .pricing-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise" class="current">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <div class="eyebrow">— Preise</div>
+    <h1>Faire Preise pro Schule, <em>nicht pro Schüler</em>.</h1>
+    <p>Pauschalpreis pro Schule, egal wie groß. Keine versteckten Kosten, keine Überraschungen, keine Bindung.</p>
+  </div>
+</section>
+
+<section class="pricing-section">
+  <div class="container">
+    <div class="pricing-grid">
+      <div class="price-card" data-tier="free" onclick="selectTier('free')">
+        <div class="price-name">Free</div>
+        <div class="price-amt"><span class="price-num">0 €</span><span class="price-period">/ Monat</span></div>
+        <div class="price-target">1 Klasse · 30 Schüler:innen</div>
+        <ul class="price-feats">
+          <li>Volle Adaptive-Engine</li>
+          <li>Klassenrennen &amp; XP</li>
+          <li>Lehrer-Dashboard</li>
+          <li>4 Wochen kostenlos testen</li>
+        </ul>
+        <a href="/login" class="price-cta">Kostenlos starten</a>
+      </div>
+
+      <div class="price-card" data-tier="klein" onclick="selectTier('klein')">
+        <div class="price-name">Klein</div>
+        <div class="price-amt"><span class="price-num">50 €</span><span class="price-period">/ Monat</span></div>
+        <div class="price-target">Schulen mit &lt; 30 Lehrkräften</div>
+        <ul class="price-feats">
+          <li>Alle Funktionen aus Free</li>
+          <li>Unbegrenzte Klassen</li>
+          <li>Schulverwaltungs-Konto</li>
+          <li>E-Mail-Support</li>
+        </ul>
+        <a href="/kontakt" class="price-cta">Schule anmelden</a>
+      </div>
+
+      <div class="price-card featured" data-tier="mittel" onclick="selectTier('mittel')">
+        <div class="price-name">Mittel</div>
+        <div class="price-amt"><span class="price-num">75 €</span><span class="price-period">/ Monat</span></div>
+        <div class="price-target">Schulen mit 30–60 Lehrkräften</div>
+        <ul class="price-feats">
+          <li>Alle Funktionen aus Klein</li>
+          <li>Erweiterte Auswertungen</li>
+          <li>Bevorzugter Support</li>
+          <li>Onboarding für das Kollegium</li>
+        </ul>
+        <a href="/kontakt" class="price-cta">Schule anmelden</a>
+      </div>
+
+      <div class="price-card" data-tier="gross" onclick="selectTier('gross')">
+        <div class="price-name">Groß</div>
+        <div class="price-amt"><span class="price-num">100 €</span><span class="price-period">/ Monat</span></div>
+        <div class="price-target">Schulen mit &gt; 60 Lehrkräften</div>
+        <ul class="price-feats">
+          <li>Alle Funktionen aus Mittel</li>
+          <li>Dedizierter Account-Manager</li>
+          <li>SLA &amp; Schulungen</li>
+          <li>Custom-Anpassungen</li>
+        </ul>
+        <a href="/kontakt" class="price-cta">Kontakt aufnehmen</a>
+      </div>
+    </div>
+
+    <div id="tier-summary" style="margin-top:20px;padding:20px 24px;background:var(--emerald-tint);border:1px solid var(--emerald);border-radius:14px;display:none;">
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:500;color:var(--emerald-2);margin-bottom:6px;" id="tier-summary-title"></div>
+      <div style="font-size:14px;color:var(--ink-soft);line-height:1.6;" id="tier-summary-body"></div>
+    </div>
+
+    <div class="pricing-note">
+      Bei einer Schule mit 50 Lehrkräften = nur <strong>1,50 € pro Lehrkraft</strong> im Monat. Keine Bindung. Jederzeit kündbar.
+    </div>
+  </div>
+</section>
+
+<script>
+// Pricing tier selector — fixes confusing tier comparison
+const TIER_INFO = {
+  free:   { name: 'Free', price: '0 €', who: 'Ideal zum Ausprobieren: eine einzelne Klasse mit bis zu 30 Schüler:innen. Voller Funktionsumfang der Lern-Engine, 4 Wochen lang kostenlos.' },
+  klein:  { name: 'Klein', price: '50 € / Monat', who: 'Für kleinere Schulen mit unter 30 Lehrkräften. Unbegrenzte Klassen, eigenes Schulverwaltungs-Konto und E-Mail-Support.' },
+  mittel: { name: 'Mittel', price: '75 € / Monat', who: 'Unser beliebtester Tarif — für Schulen mit 30 bis 60 Lehrkräften. Zusätzlich erweiterte Auswertungen und Onboarding fürs Kollegium.' },
+  gross:  { name: 'Groß', price: '100 € / Monat', who: 'Für große Schulen mit über 60 Lehrkräften. Dedizierter Account-Manager, SLA, Schulungen und individuelle Anpassungen.' },
+};
+function selectTier(tier) {
+  document.querySelectorAll('.price-card').forEach(c => {
+    c.style.outline = c.dataset.tier === tier ? '2.5px solid var(--emerald)' : '';
+    c.style.outlineOffset = c.dataset.tier === tier ? '2px' : '';
+  });
+  const info = TIER_INFO[tier];
+  if (!info) return;
+  const box = document.getElementById('tier-summary');
+  document.getElementById('tier-summary-title').textContent = 'Tarif ' + info.name + ' — ' + info.price;
+  document.getElementById('tier-summary-body').textContent = info.who;
+  box.style.display = 'block';
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+
+<section class="faq-section">
+  <div class="container" style="max-width: 760px;">
+    <div class="section-eyebrow">Häufige Fragen</div>
+    <h2 class="section-title" style="margin-bottom: 36px;">Was Schulen <em>zuerst fragen</em>.</h2>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Was bedeutet „pauschal pro Schule"? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Eine Schule zahlt einen festen Monatsbeitrag — egal wie viele Schüler:innen oder Lehrkräfte das System nutzen. Keine Kosten pro Person, keine Staffelung pro Klasse.</div>
+    </div>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Wann beginnt die Bezahlung? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Erst nach den 4 kostenlosen Wochen. Während der Testphase fallen keine Kosten an. Ihr entscheidet danach, ob ihr weitermacht.</div>
+    </div>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Gibt es eine Vertragsbindung? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Nein. Ihr könnt monatlich kündigen. Wenn ihr ein Jahr im Voraus zahlt, bekommt ihr 10 % Rabatt — aber das ist optional.</div>
+    </div>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Bekommen wir eine Rechnung? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Ja, monatliche Rechnung per E-Mail. Zahlung per SEPA-Lastschrift oder Überweisung — keine Kreditkarte nötig.</div>
+    </div>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Was passiert, wenn unsere Schule wächst? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Wenn ihr in einen größeren Tarif rutscht (z.B. von Klein auf Mittel), passt sich der Preis ab dem nächsten Monat an. Wir benachrichtigen euch vorher.</div>
+    </div>
+
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="faq-q">Gibt es Werbung oder In-App-Käufe? <span class="faq-toggle">+</span></div>
+      <div class="faq-a">Niemals. StudyRace ist komplett werbefrei. Kosmetische Belohnungen verdient man durchs Lernen — nicht durchs Kaufen.</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+        <p>Die adaptive Lernplattform, gebaut für deutsche Klassenzimmer.</p>
+      </div>
+      <div class="footer-col">
+        <h6>Plattform</h6>
+        <a href="/funktionen">Funktionen</a>
+        <a href="/login">Anmelden</a>
+        <a href="/kontakt">Kontakt</a>
+        <a href="/preise" class="footer-pricing-link">Preise</a>
+      </div>
+      <div class="footer-col">
+        <h6>Anmelden als</h6>
+        <a href="/login">Schüler:in</a>
+        <a href="/login">Lehrkraft</a>
+        <a href="/login">Schul-Verwaltung</a>
+        <a href="/login">Admin</a>
+      </div>
+      <div class="footer-col">
+        <h6>Unternehmen</h6>
+        <a href="/ueber-uns">Über uns</a>
+        <a href="/kontakt">Kontakt</a>
+      </div>
+      <div class="footer-col">
+        <h6>Rechtliches</h6>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+        <a href="/agb">AGB</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 StudyRace · In Deutschland gemacht 🇩🇪</div>
+      <div>studyrace.de</div>
+    </div>
+  </div>
+</footer>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}</script>
+<script src="/api.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

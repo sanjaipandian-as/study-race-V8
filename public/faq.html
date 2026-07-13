@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Häufige Fragen — StudyRace</title>
+<meta name="description" content="Antworten auf häufige Fragen zu StudyRace — Fächer, Gamification, technische Voraussetzungen.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.faq-hero { background: var(--cream); padding: 90px 0 60px; border-bottom: 1px solid var(--line-soft); }
+.faq-hero .eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--emerald); font-weight: 500; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.faq-hero .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--emerald); }
+.faq-hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(38px, 4.5vw, 54px);
+  line-height: 1.05; letter-spacing: -0.025em; margin-bottom: 18px;
+}
+.faq-hero h1 em { font-style: italic; color: var(--emerald); }
+.faq-hero p { font-size: 16px; color: var(--ink-soft); max-width: 520px; }
+.faq-body { padding: 56px 0 80px; }
+.faq-body .container { max-width: 760px; }
+.faq-cat {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--emerald); font-weight: 500;
+  margin: 36px 0 14px;
+}
+.faq-cat:first-child { margin-top: 0; }
+.faq-item {
+  border: 1px solid var(--line-soft); border-radius: 12px;
+  margin-bottom: 10px; overflow: hidden; background: var(--cream-2);
+}
+.faq-q {
+  width: 100%; text-align: left; padding: 18px 22px; background: transparent;
+  border: none; cursor: pointer; font-family: 'Fraunces', serif; font-size: 16.5px;
+  font-weight: 500; color: var(--ink); display: flex; justify-content: space-between;
+  align-items: center; gap: 16px;
+}
+.faq-q .faq-toggle {
+  font-size: 20px; color: var(--emerald); flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.faq-item.open .faq-toggle { transform: rotate(45deg); }
+.faq-a {
+  max-height: 0; overflow: hidden; transition: max-height 0.25s ease;
+}
+.faq-a-inner {
+  padding: 0 22px 20px; font-size: 14.5px; line-height: 1.7; color: var(--ink-soft);
+}
+.faq-item.open .faq-a { max-height: 400px; }
+.faq-contact {
+  background: var(--emerald); color: white; padding: 56px 0; text-align: center; margin-top: 20px;
+}
+.faq-contact h2 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 28px; margin-bottom: 12px;
+}
+.faq-contact p { color: rgba(255,255,255,0.85); margin-bottom: 24px; }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span>StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq" class="current">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="faq-hero">
+  <div class="container">
+    <div class="eyebrow">Hilfe</div>
+    <h1>Häufige <em>Fragen</em></h1>
+    <p>Alles, was Schulen, Lehrkräfte und Eltern über StudyRace wissen wollen.</p>
+  </div>
+</section>
+
+<section class="faq-body">
+  <div class="container">
+
+    <div class="faq-cat">Grundlagen</div>
+
+    <div class="faq-item">
+      <button class="faq-q">Was ist StudyRace? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        StudyRace ist eine digitale Lernplattform für Schulen der Klassen 5 bis 10.
+        Schüler:innen üben lehrplan-konforme Aufgaben, sammeln Punkte und treten in einem
+        freundlichen Klassenrennen gegeneinander an. Lehrkräfte sehen den Fortschritt ihrer
+        Klasse in Echtzeit.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Welche Fächer werden abgedeckt? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Aktuell vier Fächer: Mathematik, Physik, Chemie und Biologie. Die Aufgaben sind nach
+        Klassenstufe (7–10) und Schwierigkeitsgrad gestaffelt. Weitere Fächer sind in Planung.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Für welche Klassenstufen ist StudyRace gedacht? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        StudyRace richtet sich an die Sekundarstufe I — also die Klassen 5 bis 10. Der
+        Aufgabenpool wird laufend erweitert.
+      </div></div>
+    </div>
+
+    <div class="faq-cat">Lernen & Gamification</div>
+
+    <div class="faq-item">
+      <button class="faq-q">Wie funktioniert das Klassenrennen? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Jede richtige Antwort gibt XP (Erfahrungspunkte). Diese Punkte bewegen den Avatar
+        der Schüler:in im Klassenrennen voran. Das Rennen ist freundschaftlich gedacht — es
+        geht nicht darum, andere abzuhängen, sondern darum, dass die ganze Klasse gemeinsam
+        vorankommt und Lernen sichtbar wird.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Was bedeutet „adaptives Lernen"? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Die Plattform merkt sich, wie gut eine Schüler:in in einem Thema ist (Skill-Level 1–5).
+        Wer eine Frage richtig beantwortet, bekommt danach eine etwas schwerere. Wer Mühe hat,
+        bekommt einfachere Aufgaben und mehr Erklärungen. So wird niemand über- oder unterfordert.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Gibt es Belohnungen oder Abzeichen? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Ja. Schüler:innen schalten Erfolge (Achievements) frei — zum Beispiel für die ersten
+        10 beantworteten Fragen, das Erreichen von 500 XP oder einen 7-Tage-Streak. Das motiviert,
+        ohne Druck aufzubauen.
+      </div></div>
+    </div>
+
+    <div class="faq-cat">Technik</div>
+
+    <div class="faq-item">
+      <button class="faq-q">Welche technischen Voraussetzungen gibt es? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        StudyRace läuft im Browser — auf Computer, Tablet und Smartphone. Es ist keine
+        Installation nötig. Die Plattform kann zusätzlich als App zum Startbildschirm
+        hinzugefügt werden (PWA). Benötigt wird nur ein aktueller Browser und eine
+        Internetverbindung.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Muss man etwas installieren? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Nein. StudyRace ist eine Web-Anwendung. Wer möchte, kann sie über den Browser
+        „zum Startbildschirm hinzufügen" — dann verhält sie sich wie eine App, ganz ohne
+        App-Store.
+      </div></div>
+    </div>
+
+    <div class="faq-cat">Datenschutz & Kosten</div>
+
+    <div class="faq-item">
+      <button class="faq-q">Wie steht es um den Datenschutz? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Alle Daten werden in Deutschland gehostet, die Plattform ist DSGVO-konform. Es gibt
+        keine Werbung und keine Datenweitergabe. Mehr Details auf unserer
+        <a href="/sicherheit">Sicherheits-Seite</a>.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Was kostet StudyRace? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Es gibt einen kostenlosen Tarif sowie kostenpflichtige Tarife für größere Schulen.
+        Kleinere Schulen können StudyRace dauerhaft kostenlos nutzen. Details auf der
+        <a href="/preise">Preisseite</a>.
+      </div></div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q">Wie melde ich meine Schule an? <span class="faq-toggle">+</span></button>
+      <div class="faq-a"><div class="faq-a-inner">
+        Über das Formular auf der <a href="/kontakt">Kontaktseite</a>. Nach einer kurzen
+        Prüfung wird die Schule freigeschaltet, und die Schul-Verwaltung kann Lehrkräfte
+        einladen.
+      </div></div>
+    </div>
+
+  </div>
+</section>
+
+<section class="faq-contact">
+  <div class="container">
+    <h2>Noch Fragen offen?</h2>
+    <p>Wir antworten gerne persönlich.</p>
+    <a href="/kontakt" class="btn btn-lg" style="background:var(--cream-2);color:var(--ink);">Kontakt aufnehmen <span class="arrow">→</span></a>
+  </div>
+</section>
+
+<footer class="footer" id="footer"></footer>
+
+<script>
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const item = btn.parentElement;
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+</script>
+<script src="/api.js"></script>
+<script src="/footer.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kontakt — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.contact-section { padding: 90px 0; background: var(--cream); }
+.contact-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 70px; align-items: start; }
+.contact-info .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--emerald); font-weight: 500; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.contact-info .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--emerald); }
+.contact-info h1 {
+  font-family: 'Fraunces', serif; font-weight: 500;
+  font-size: clamp(34px, 4vw, 46px);
+  line-height: 1.1; letter-spacing: -0.025em; margin-bottom: 22px;
+}
+.contact-info h1 em { font-style: italic; color: var(--emerald); }
+.contact-info p { font-size: 16px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 28px; }
+.contact-meta { display: flex; flex-direction: column; gap: 18px; }
+.contact-meta-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 16px 18px; border: 1px solid var(--line-soft);
+  background: var(--cream-2); border-radius: 12px;
+}
+.contact-meta-item .ic {
+  width: 36px; height: 36px; border-radius: 10px;
+  background: var(--emerald-tint); color: var(--emerald);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; flex-shrink: 0;
+}
+.contact-meta-item .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-mute); margin-bottom: 4px;
+}
+.contact-meta-item .val { font-size: 14.5px; color: var(--ink); font-weight: 500; }
+
+.contact-form {
+  background: var(--paper); border: 1px solid var(--line-soft);
+  border-radius: 16px; padding: 36px;
+}
+.field { margin-bottom: 18px; }
+.field label {
+  display: block; font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--ink-mute); font-weight: 500; margin-bottom: 8px;
+}
+.field input, .field textarea, .field select {
+  width: 100%; padding: 11px 14px;
+  border: 1px solid var(--line-soft); border-radius: 10px;
+  background: var(--cream-2); font-family: inherit; font-size: 14px;
+  color: var(--ink); outline: none; transition: border-color 0.15s;
+}
+.field input:focus, .field textarea:focus, .field select:focus {
+  border-color: var(--emerald); background: white;
+}
+.field textarea { min-height: 120px; resize: vertical; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.form-msg {
+  padding: 12px 14px; border-radius: 10px;
+  font-size: 13.5px; margin-bottom: 16px; display: none;
+}
+.form-msg.success { background: var(--emerald-tint); color: var(--emerald); }
+.form-msg.error { background: #FCE6E6; color: #B85537; }
+
+@media (max-width: 900px) {
+  .contact-grid { grid-template-columns: 1fr; gap: 40px; }
+  .field-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt" class="current">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="contact-section">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="eyebrow">Kontakt</div>
+        <h1>Lass uns <em>reden</em>.</h1>
+        <p>Egal ob du eine Schule anmelden willst, eine Frage zur Plattform hast oder einfach nur „Hallo" sagen möchtest — wir antworten innerhalb von 24 Stunden.</p>
+
+        <div class="contact-meta">
+          <div class="contact-meta-item">
+            <div class="ic">✉</div>
+            <div>
+              <div class="label">E-Mail</div>
+              <div class="val">sharvesh.vijayakumar@asgnsu.de</div>
+            </div>
+          </div>
+          <div class="contact-meta-item">
+            <div class="ic">⌖</div>
+            <div>
+              <div class="label">Standort</div>
+              <div class="val">Frankfurt am Main, Deutschland</div>
+            </div>
+          </div>
+          <div class="contact-meta-item">
+            <div class="ic">⏱</div>
+            <div>
+              <div class="label">Antwortzeit</div>
+              <div class="val">Innerhalb von 24 Std (Mo–Fr)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form">
+        <div class="form-msg success" id="form-success">Danke! Wir melden uns bald bei dir.</div>
+        <div class="form-msg error" id="form-error">Etwas ist schiefgelaufen. Bitte später erneut versuchen.</div>
+
+        <form id="contact-form" onsubmit="return submitContact(event)">
+          <div class="field-row">
+            <div class="field">
+              <label for="name">Name</label>
+              <input type="text" id="name" name="name" required placeholder="Vor- und Nachname">
+            </div>
+            <div class="field">
+              <label for="role">Ich bin</label>
+              <select id="role" name="role" required>
+                <option value="">Bitte wählen</option>
+                <option value="school">Schul-Verwaltung</option>
+                <option value="teacher">Lehrkraft</option>
+                <option value="parent">Elternteil</option>
+                <option value="other">Andere/r</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="email">E-Mail</label>
+            <input type="email" id="email" name="email" required placeholder="name@beispiel.de">
+          </div>
+          <div class="field">
+            <label for="school">Schule (optional)</label>
+            <input type="text" id="school" name="school" placeholder="Name deiner Schule">
+          </div>
+          <div class="field">
+            <label for="message">Nachricht</label>
+            <textarea id="message" name="message" required placeholder="Wie können wir helfen?"></textarea>
+          </div>
+          <button type="submit" class="btn btn-emerald btn-lg" style="width:100%; justify-content:center;">
+            Nachricht senden <span class="arrow">→</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/" class="logo"><span class="logo-flag"></span> StudyRace</a>
+        <p>Die adaptive Lernplattform, gebaut für deutsche Klassenzimmer.</p>
+      </div>
+      <div class="footer-col">
+        <h6>Plattform</h6>
+        <a href="/funktionen">Funktionen</a>
+        <a href="/login">Anmelden</a>
+        <a href="/kontakt">Kontakt</a>
+        <a href="/preise" class="footer-pricing-link">Preise</a>
+      </div>
+      <div class="footer-col">
+        <h6>Anmelden als</h6>
+        <a href="/login">Schüler:in</a>
+        <a href="/login">Lehrkraft</a>
+        <a href="/login">Schul-Verwaltung</a>
+        <a href="/login">Admin</a>
+      </div>
+      <div class="footer-col">
+        <h6>Unternehmen</h6>
+        <a href="/ueber-uns">Über uns</a>
+        <a href="/kontakt">Kontakt</a>
+      </div>
+      <div class="footer-col">
+        <h6>Rechtliches</h6>
+        <a href="/impressum">Impressum</a>
+        <a href="/datenschutz">Datenschutz</a>
+        <a href="/agb">AGB</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 StudyRace · In Deutschland gemacht 🇩🇪</div>
+      <div>studyrace.de</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+async function submitContact(e) {
+  e.preventDefault();
+  const form = e.target;
+  const data = {
+    school_name: form.school.value || form.name.value,
+    contact_name: form.name.value,
+    contact_email: form.email.value,
+    message: form.message ? form.message.value : '',
+  };
+  // call backend
+  try {
+    const resp = await fetch('/api/auth/signup-school', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+      credentials: 'include',
+    });
+    const result = await resp.json();
+    if (resp.ok && result.ok) {
+      document.getElementById('form-success').style.display = 'block';
+      document.getElementById('form-error').style.display = 'none';
+      form.reset();
+    } else {
+      document.getElementById('form-error').style.display = 'block';
+      document.getElementById('form-error').textContent = result.error || 'Fehler beim Absenden.';
+    }
+  } catch (err) {
+    document.getElementById('form-error').style.display = 'block';
+    document.getElementById('form-error').textContent = 'Verbindungsfehler.';
+  }
+  return false;
+}
+</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}</script>
+<script src="/api.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

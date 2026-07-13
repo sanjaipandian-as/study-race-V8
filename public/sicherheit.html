@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1B6B45">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sicherheit & Datenschutz — StudyRace</title>
+<meta name="description" content="Wie StudyRace Schülerdaten schützt — DSGVO, Hosting in Deutschland, Verschlüsselung.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/site.css">
+<style>
+.sec-hero { background: var(--cream); padding: 90px 0 70px; border-bottom: 1px solid var(--line-soft); }
+.sec-hero .eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--emerald); font-weight: 500; margin-bottom: 18px;
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.sec-hero .eyebrow::before { content: ''; width: 24px; height: 1px; background: var(--emerald); }
+.sec-hero h1 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: clamp(38px, 4.5vw, 54px);
+  line-height: 1.05; letter-spacing: -0.025em; margin-bottom: 22px; max-width: 720px;
+}
+.sec-hero h1 em { font-style: italic; color: var(--emerald); }
+.sec-hero p { font-size: 17px; line-height: 1.65; color: var(--ink-soft); max-width: 560px; }
+.sec-body { padding: 70px 0; }
+.sec-body .container { max-width: 860px; }
+.sec-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.sec-card {
+  background: var(--cream-2); border: 1px solid var(--line-soft);
+  border-radius: 14px; padding: 26px;
+}
+.sec-card .sc-icon {
+  width: 46px; height: 46px; border-radius: 11px; background: var(--emerald-tint);
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  margin-bottom: 14px;
+}
+.sec-card h3 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 19px; margin-bottom: 8px;
+}
+.sec-card p { font-size: 14px; line-height: 1.65; color: var(--ink-soft); margin: 0; }
+.sec-detail { margin-top: 56px; }
+.sec-detail h2 {
+  font-family: 'Fraunces', serif; font-weight: 500; font-size: 28px;
+  letter-spacing: -0.02em; margin-bottom: 16px;
+}
+.sec-detail h2 em { font-style: italic; color: var(--emerald); }
+.sec-detail p { font-size: 16px; line-height: 1.75; color: var(--ink-soft); margin-bottom: 14px; }
+.sec-detail ul { margin: 0 0 16px 22px; }
+.sec-detail li { font-size: 15px; line-height: 1.7; color: var(--ink-soft); margin-bottom: 7px; }
+.sec-detail strong { color: var(--ink); font-weight: 600; }
+@media (max-width: 768px) { .sec-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<nav class="top">
+  <div class="nav-inner">
+    <a href="/" class="logo"><span class="logo-flag"></span>StudyRace</a>
+    <div class="nav-links">
+      <a href="/">Startseite</a>
+      <a href="/funktionen">Funktionen</a>
+      <a href="/preise">Preise</a>
+      <a href="/faq">FAQ</a>
+      <a href="/ueber-uns">Über uns</a>
+      <a href="/kontakt">Kontakt</a>
+    </div>
+    <div class="nav-cta" id="nav-cta">
+      <a href="/login" class="btn btn-ghost">Anmelden</a>
+      <a href="/login" class="btn btn-emerald">Kostenlos starten <span class="arrow">→</span></a>
+    </div>
+  </div>
+</nav>
+
+<section class="sec-hero">
+  <div class="container">
+    <div class="eyebrow">Sicherheit & Datenschutz</div>
+    <h1>Sicher und <em>transparent</em>.</h1>
+    <p>
+      Schülerdaten sind sensibel. Deshalb haben wir StudyRace von Anfang an so gebaut,
+      dass Schulen und Eltern genau wissen, was mit den Daten passiert.
+    </p>
+  </div>
+</section>
+
+<section class="sec-body">
+  <div class="container">
+    <div class="sec-grid">
+      <div class="sec-card">
+        <div class="sc-icon">🇩🇪</div>
+        <h3>Hosting in Deutschland</h3>
+        <p>Alle Daten liegen auf Servern in Deutschland. Keine Übertragung in Drittländer außerhalb der EU.</p>
+      </div>
+      <div class="sec-card">
+        <div class="sc-icon">📋</div>
+        <h3>DSGVO-konform</h3>
+        <p>Wir verarbeiten nur, was für den Lernbetrieb nötig ist — und dokumentieren das transparent.</p>
+      </div>
+      <div class="sec-card">
+        <div class="sc-icon">🔐</div>
+        <h3>Verschlüsselung</h3>
+        <p>Übertragung per HTTPS/TLS. Passwörter werden mit bcrypt gehasht — nie im Klartext gespeichert.</p>
+      </div>
+      <div class="sec-card">
+        <div class="sc-icon">🚫</div>
+        <h3>Keine Werbung</h3>
+        <p>StudyRace zeigt keine Werbung und verkauft keine Daten. Punkt.</p>
+      </div>
+    </div>
+
+    <div class="sec-detail">
+      <h2>Wie wir Daten <em>schützen</em></h2>
+      <p>
+        StudyRace ist eine geschlossene Plattform. Es gibt keine öffentlichen Profile,
+        keine Suchfunktion für Außenstehende und keine Möglichkeit für fremde Personen,
+        Schüler:innen zu kontaktieren. Nur Mitglieder derselben Schule sehen einander.
+      </p>
+      <ul>
+        <li><strong>Zugriffskontrolle:</strong> Vier Rollen (Schüler, Lehrkraft, Schul-Verwaltung, System) mit klar getrennten Rechten.</li>
+        <li><strong>Sichere Anmeldung:</strong> Anmelde-Token in einem HttpOnly-Cookie, gegen Auslesen durch Skripte geschützt.</li>
+        <li><strong>Passwort-Sicherheit:</strong> Passwörter werden mit bcrypt gehasht und gesalzen gespeichert.</li>
+        <li><strong>Verschlüsselte Verbindung:</strong> Der gesamte Datenverkehr läuft über HTTPS.</li>
+      </ul>
+
+      <h2 style="margin-top:40px;">DSGVO im <em>Detail</em></h2>
+      <p>
+        Schulen sind für die Daten ihrer Schüler:innen verantwortlich. StudyRace handelt als
+        Auftragsverarbeiter — das heißt, wir verarbeiten Daten ausschließlich im Auftrag und
+        nach Weisung der Schule. Vor dem produktiven Einsatz wird mit jeder Schule ein
+        Auftragsverarbeitungsvertrag (AVV) geschlossen.
+      </p>
+      <ul>
+        <li><strong>Auskunftsrecht:</strong> Jede Person kann erfahren, welche Daten gespeichert sind.</li>
+        <li><strong>Löschrecht:</strong> Daten werden auf Wunsch oder nach Nutzungsende gelöscht.</li>
+        <li><strong>Datenexport:</strong> Schul-Administrator:innen können alle Daten jederzeit als JSON-Datei herunterladen.</li>
+        <li><strong>Datensparsamkeit:</strong> Wir erheben keine Daten, die für das Lernen nicht gebraucht werden.</li>
+      </ul>
+
+      <h2 style="margin-top:40px;">Transparenz</h2>
+      <p>
+        Wir sagen klar, was wir tun. Die vollständige <a href="/datenschutz">Datenschutzerklärung</a>
+        ist öffentlich einsehbar. Bei Fragen erreichst du uns direkt unter
+        <strong>sharvesh.vijayakumar@asgnsu.de</strong>.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer" id="footer"></footer>
+
+<script src="/api.js"></script>
+<script src="/footer.js"></script>
+<script src="/nav-auth.js"></script>
+<script src="/mobile-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Sharvesh Vijayakumar. All rights reserved. -->
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mein Dashboard — StudyRace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/dashboard.css">
+</head>
+<body>
+
+<aside id="sidebar">
+  <a href="/" class="sb-logo"><span class="sb-flag"></span> StudyRace</a>
+  <div class="user-card">
+    <div class="user-av">🎓</div>
+    <div class="user-info">
+      <div class="name" id="sb-name">Lade...</div>
+      <div class="role">Schüler:in</div>
+    </div>
+  </div>
+  <div class="xp-section">
+    <div class="xp-label"><span>XP</span><span class="val" id="xp-val">0 / 1000</span></div>
+    <div class="xp-bar"><div class="xp-fill" id="xp-fill" style="width: 0%"></div></div>
+  </div>
+  <div class="nav-label">— Lernen</div>
+  <div class="nav-item active" data-section="overview"><span class="ic">🏠</span> Übersicht</div>
+  <div class="nav-item" data-section="practice"><span class="ic">🎯</span> Üben</div>
+  <div class="nav-item" data-section="achievements"><span class="ic">🏅</span> Erfolge</div>
+  <div class="nav-item" data-section="homework"><span class="ic">📝</span> Hausaufgaben <span class="badge" id="hw-badge" style="display:none">0</span></div>
+  <div class="nav-item" data-section="timetable"><span class="ic">📅</span> Stundenplan</div>
+  <div class="nav-item" data-section="messages"><span class="ic">✉</span> Nachrichten <span class="badge" id="msg-badge" style="display:none">0</span></div>
+  <div class="nav-item" data-section="materials"><span class="ic">📚</span> Materialien</div>
+  <div class="nav-item" data-section="progress"><span class="ic">📊</span> Fortschritt</div>
+  <div class="nav-label">— Klasse</div>
+  <div class="nav-item" data-section="race"><span class="ic">🏁</span> Klassenrennen</div>
+  <div class="sidebar-bottom">
+    <div class="nav-item" id="logout-item"><span class="ic">🚪</span> Abmelden</div>
+  </div>
+</aside>
+
+<main id="main">
+  <div class="topbar">
+    <div class="tb-greet">Willkommen zurück, <em><span id="name-display">…</span></em>.</div>
+    <div class="tb-actions">
+      <input type="text" class="tb-search" placeholder="Suche…">
+      <button class="tb-icon" onclick="SRActions.showNotifications()" title="Benachrichtigungen">🔔</button>
+      <button class="tb-icon" onclick="SRActions.changePassword()" title="Passwort ändern">⚙️</button>
+    </div>
+  </div>
+
+  <div class="content" id="content">
+    <div class="loading">Lade Daten…</div>
+  </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="/api.js"></script>
+<script src="/actions.js"></script>
+<script>
+let userData = null;
+let dataCache = {};
+
+async function init() {
+  const user = await SR.requireRole('student');
+  userData = user;
+  document.getElementById('sb-name').textContent = (user.first_name || user.full_name || '') + (user.last_name ? ' ' + user.last_name : '');
+  document.getElementById('name-display').textContent = user.first_name || user.full_name || 'Schüler:in';
+
+  // Wire sidebar nav
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => {
+    el.onclick = () => switchSection(el.dataset.section);
+  });
+  document.getElementById('logout-item').onclick = async () => {
+    await SR.logout(); SR.go('/');
+  };
+
+  // Load home data
+  try {
+    const r = await SR.get('/api/data/student/home');
+    const d = r.data || {};
+    const xp = (d.progress && d.progress.total_xp) || 0;
+    const target = Math.max(1000, Math.ceil(xp / 1000) * 1000);
+    document.getElementById('xp-val').textContent = `${xp} / ${target}`;
+    setTimeout(() => { document.getElementById('xp-fill').style.width = ((xp / target) * 100) + '%'; }, 200);
+    dataCache.home = d;
+  } catch (e) { dataCache.home = {}; }
+
+  // Show overview by default
+  switchSection('overview');
+}
+
+async function switchSection(name) {
+  document.querySelectorAll('.nav-item[data-section]').forEach(el => el.classList.toggle('active', el.dataset.section === name));
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade…</div>';
+
+  try {
+    if (name === 'overview') { content.innerHTML = renderOverview(dataCache.home || {}); fillOverviewExtras(); return; }
+    if (name === 'practice')  return renderPracticeHome();
+    if (name === 'achievements') return renderAchievements();
+    if (name === 'homework')  { const d = await loadOrCache('homework', '/api/data/student/homework'); return content.innerHTML = d._error ? errBox(d._error) : renderHomework(d); }
+    if (name === 'timetable') { const d = await loadOrCache('timetable', '/api/data/student/timetable'); return content.innerHTML = d._error ? errBox(d._error) : renderTimetable(d); }
+    if (name === 'messages')  { const d = await loadOrCache('inbox', '/api/data/messages/inbox'); return content.innerHTML = d._error ? errBox(d._error) : renderMessages(d); }
+    if (name === 'materials') { const d = await loadOrCache('materials', '/api/data/student/materials'); return content.innerHTML = d._error ? errBox(d._error) : renderMaterials(d); }
+    if (name === 'progress')  { const d = await loadOrCache('progress', '/api/data/student/progress'); return content.innerHTML = d._error ? errBox(d._error) : renderProgress(d); }
+    if (name === 'race')      return renderRace();
+  } catch (e) {
+    content.innerHTML = `<div class="empty-state"><div class="em-icon">⚠️</div><h3>Fehler beim Laden</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+function errBox(msg) {
+  return `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Daten konnten nicht geladen werden</h3><p>${msg || 'Bitte versuche es erneut.'}</p></div>`;
+}
+
+async function loadOrCache(key, url) {
+  if (dataCache[key]) return dataCache[key];
+  try {
+    const r = await SR.get(url);
+    if (!r || !r.ok) {
+      // Don't cache failures — return an empty shape so render functions don't hang
+      return { _error: (r && r.data && r.data.error) || 'Daten konnten nicht geladen werden.' };
+    }
+    dataCache[key] = r.data || {};
+    return dataCache[key];
+  } catch (e) {
+    return { _error: e.message || 'Verbindungsfehler.' };
+  }
+}
+
+function renderOverview(d) {
+  const stats = d.progress || {};
+  const tasks = d.classes || [];
+  const firstName = (window.__userName || 'Lernende:r').split(' ')[0];
+  return `
+    <div class="dash-banner">
+      <img src="/images/student-focused.jpg" alt="">
+      <div class="banner-inner">
+        <div class="banner-eyebrow">Heute · ${new Date().toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})}</div>
+        <h1>Bereit, <em>weiter zu rennen</em>, ${firstName}?</h1>
+        <div class="banner-sub">${tasks.length > 0 ? tasks.length + ' Klasse' + (tasks.length>1?'n':'') + ' aktiv · ' + (stats.total_xp || 0) + ' XP gesammelt' : 'Tritt einer Klasse bei, um loszulegen.'}</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card accent-emerald">
+        <div class="stat-icon">⚡</div>
+        <div class="label">Gesamt-XP</div><div class="val">${stats.total_xp || 0}</div>
+      </div>
+      <div class="stat-card accent-amber">
+        <div class="stat-icon">🔥</div>
+        <div class="label">Streak</div><div class="val"><em>${stats.current_streak || 0}</em></div>
+      </div>
+      <div class="stat-card accent-violet">
+        <div class="stat-icon">📚</div>
+        <div class="label">Klassen</div><div class="val">${tasks.length}</div>
+      </div>
+      <div class="stat-card accent-blue">
+        <div class="stat-icon">🏅</div>
+        <div class="label">Erfolge</div><div class="val" id="ov-ach-count">–</div>
+      </div>
+    </div>
+
+    <div class="s-h"><h2><span class="sec-icon-chip">🚀</span>Schnellzugriff</h2></div>
+    <div class="quick-tiles">
+      <div class="quick-tile" onclick="switchSection('practice')">
+        <div class="qt-icon">🎯</div>
+        <div class="qt-title">Üben</div>
+        <div class="qt-desc">Adaptive Fragen, die zu deinem Niveau passen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('homework')">
+        <div class="qt-icon">📝</div>
+        <div class="qt-title">Hausaufgaben</div>
+        <div class="qt-desc">Deine offenen Aufgaben erledigen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('race')">
+        <div class="qt-icon">🏁</div>
+        <div class="qt-title">Klassenrennen</div>
+        <div class="qt-desc">Sieh, wo deine Klasse gerade steht.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('achievements')">
+        <div class="qt-icon">🏅</div>
+        <div class="qt-title">Erfolge</div>
+        <div class="qt-desc">Deine freigeschalteten Abzeichen.</div>
+      </div>
+      <div class="quick-tile" onclick="switchSection('messages')">
+        <div class="qt-icon">✉️</div>
+        <div class="qt-title">Nachrichten</div>
+        <div class="qt-desc">Nachrichten von deinen Lehrkräften.</div>
+      </div>
+      <div class="quick-tile" onclick="SRActions.joinClass()">
+        <div class="qt-icon">➕</div>
+        <div class="qt-title">Klasse beitreten</div>
+        <div class="qt-desc">Mit einem Einladungscode beitreten.</div>
+      </div>
+    </div>`;
+}
+
+// Fill the achievements count on the overview asynchronously
+async function fillOverviewExtras() {
+  try {
+    const r = await SR.get('/api/data/student/achievements');
+    if (r.ok) {
+      const earned = (r.data.achievements || []).filter(a => a.earned).length;
+      const el = document.getElementById('ov-ach-count');
+      if (el) el.textContent = earned;
+    }
+  } catch (e) { /* non-fatal */ }
+}
+
+function renderHomework(d) {
+  const tasks = d.tasks || [];
+  document.getElementById('hw-badge').style.display = 'inline-flex';
+  document.getElementById('hw-badge').textContent = tasks.filter(t => t.status === 'offen').length;
+  return `
+    <div class="s-h"><div><h2>Hausaufgaben</h2><div class="sub">${tasks.length} Aufgaben insgesamt</div></div></div>
+    <div class="list-card">
+      ${tasks.map(t => `
+        <div class="list-row" ${t.status === 'offen' ? `onclick="openTaskExercise(${t.id})" style="cursor:pointer;"` : ''}>
+          <div class="list-icon ${t.status === 'erledigt' ? 'emerald' : 'amber'}">${t.status === 'erledigt' ? '✓' : '📝'}</div>
+          <div class="list-main">
+            <div class="t">${t.title}</div>
+            <div class="d">${t.subject} · Fällig ${t.due_at}</div>
+          </div>
+          <div><span class="pill ${t.status === 'erledigt' ? 'emerald' : 'amber'}">${t.status}</span></div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderTimetable(d) {
+  // Color per subject for visual interest
+  const subjColors = {
+    'Mathe': '#1B6B45', 'Mathematik': '#1B6B45',
+    'Deutsch': '#C77B2C', 'Englisch': '#3A6B8C',
+    'Bio': '#3A8C5A', 'Biologie': '#3A8C5A',
+    'Physik': '#5A4A8A', 'Chemie': '#8A4A6B',
+    'Sport': '#C75050', 'Kunst': '#C79A2C',
+    'Geschichte': '#6B5A3A', 'Erdkunde': '#4A8A7A',
+    'Musik': '#8A5A8A', 'Religion': '#7A7A4A',
+  };
+  const colorFor = (s) => subjColors[s] || '#7A8077';
+  return `
+    <div class="s-h"><div><h2>Stundenplan <em>diese Woche</em></h2><div class="sub">Deine Wochenübersicht</div></div></div>
+    <div class="timetable">
+      ${(d.days || []).map(day => `
+        <div class="tt-day">
+          <div class="tt-day-h">${day.day}</div>
+          ${(day.periods || []).map(p => `
+            <div class="tt-period" style="border-left:3px solid ${colorFor(p.subject)};">
+              <div class="time">${p.time}</div>
+              <div class="subj" style="color:${colorFor(p.subject)};font-weight:600;">${p.subject}</div>
+              <div class="room">${p.room}</div>
+            </div>
+          `).join('')}
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderMessages(d) {
+  const msgs = d.messages || [];
+  const unreadCount = d.unread || msgs.filter(m => !m.read_at).length;
+  const badge = document.getElementById('msg-badge');
+  if (badge) {
+    if (unreadCount > 0) { badge.style.display = 'inline-flex'; badge.textContent = unreadCount; }
+    else badge.style.display = 'none';
+  }
+  return `
+    <div class="s-h"><div><h2>Nachrichten</h2><div class="sub">${unreadCount} ungelesen · ${msgs.length} insgesamt</div></div>
+    <button class="btn btn-emerald" onclick="SRActions.sendMessage('student')">+ Senden</button></div>
+    <div class="list-card">
+      ${msgs.length === 0 ? `<div class="empty-state"><div class="em-icon">✉</div><h3>Keine Nachrichten</h3><p>Du hast noch keine Nachrichten erhalten.</p></div>` : msgs.map(m => {
+        const senderName = m.sender_name || m.sender_email || 'Absender';
+        const unread = !m.read_at;
+        const dateStr = m.created_at ? new Date(m.created_at).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) : '';
+        return `
+          <div class="list-row" onclick="openMessage(${m.id}, ${JSON.stringify(m).replace(/"/g,'&quot;')})" style="cursor:pointer;${unread?'background:var(--emerald-tint);':''}">
+            <div class="av-circle">${senderName.charAt(0).toUpperCase()}</div>
+            <div class="list-main">
+              <div class="t">${senderName} ${unread ? '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--emerald);margin-left:6px;"></span>' : ''}</div>
+              <div class="d">${m.subject || '(kein Betreff)'} · ${(m.body || '').substring(0, 70)}${(m.body||'').length>70?'…':''}</div>
+            </div>
+            <div class="list-meta" style="font-family:'JetBrains Mono',monospace;font-size:11px;">${dateStr}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function openMessage(id, msg) {
+  // mark as read in background
+  if (!msg.read_at) {
+    SRActions.markRead(id);
+    delete dataCache.inbox;
+  }
+  const content = document.getElementById('content');
+  content.innerHTML = `
+    <div class="s-h"><div><div class="page-h-eyebrow">Von ${msg.sender_name || msg.sender_email}</div>
+    <h1 style="font-size:24px;">${msg.subject || '(kein Betreff)'}</h1>
+    <div class="sub">Empfangen ${msg.created_at ? new Date(msg.created_at).toLocaleString('de-DE') : ''}</div></div>
+    <button class="btn btn-cream" onclick="switchSection('messages')">← Inbox</button></div>
+    <div class="card" style="padding:24px;line-height:1.65;font-size:14.5px;white-space:pre-wrap;">${msg.body || ''}</div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-emerald" onclick='SRActions.replyMessage(${JSON.stringify(msg).replace(/'/g,"&apos;")})'>↩ Antworten</button>
+    </div>
+  `;
+}
+
+function renderMaterials(d) {
+  const items = d.materials || [];
+  const ic = { pdf: '📄', png: '🖼', video: '🎬', docx: '📝', link: '🔗', pool: '📚' };
+  return `
+    <div class="s-h"><div><h2>Lern-<em>Materialien</em></h2><div class="sub">${items.length} ${items.length === 1 ? 'Datei' : 'Dateien'}</div></div></div>
+    ${items.length === 0 ? `
+      <div class="card empty-state"><div class="em-icon">📚</div><h3>Noch keine Materialien</h3><p>Deine Lehrkräfte haben noch keine Materialien hochgeladen.</p></div>
+    ` : `
+      <div class="list-card">
+        ${items.map(m => {
+          const hasUrl = m.url && m.url.trim().length > 0;
+          return `
+            <div class="list-row" ${hasUrl ? `onclick="window.open('${m.url}', '_blank')" style="cursor:pointer;"` : ''}>
+              <div class="list-icon">${ic[m.type] || '📄'}</div>
+              <div class="list-main">
+                <div class="t">${m.title}</div>
+                <div class="d">${m.class_name || m.subject || '—'} · ${(m.type || 'datei').toUpperCase()}${m.description ? ' · ' + m.description : ''}</div>
+              </div>
+              <div class="list-meta">${hasUrl ? 'Öffnen →' : 'Kein Link'}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `}
+  `;
+}
+
+function renderProgress(d) {
+  const subj = d.subjects || [];
+  const xpWeek = d.weekly_xp || [];
+  const max = Math.max(...xpWeek, 1);
+  const days = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  return `
+    <div class="s-h"><div><h2>Dein <em>Fortschritt</em></h2></div></div>
+
+    <div class="card">
+      <div class="card-tag">— XP diese Woche</div>
+      <div class="bar-chart">
+        ${xpWeek.map((v, i) => `<div class="bar" style="height:${(v/max)*100}%"><div class="bar-label">${days[i]}</div></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="s-h" style="margin-top:14px;"><h2 style="font-size:20px;">Pro Fach</h2></div>
+    <div class="progress-grid">
+      ${subj.map(s => `
+        <div class="subj-card">
+          <div class="subj-name">${s.name}</div>
+          <div class="subj-pct ${s.pct >= 80 ? 'high' : s.pct >= 60 ? 'mid' : 'low'}">${s.pct}%</div>
+          <div class="subj-trend ${s.trend.startsWith('+') ? 'up' : 'down'}">${s.trend}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="s-h" style="margin-top:14px;"><h2 style="font-size:20px;">Abzeichen</h2></div>
+    <div class="progress-grid">
+      ${(d.badges || []).map(b => `
+        <div class="card" style="text-align:center;padding:24px;${!b.earned?'opacity:0.4':''}">
+          <div style="font-size:36px;margin-bottom:10px;">${b.earned ? '🏅' : '🔒'}</div>
+          <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:500;">${b.name}</div>
+          <div style="font-size:11.5px;color:var(--ink-mute);margin-top:4px;font-family:'JetBrains Mono',monospace;">${b.earned ? b.date : 'Noch nicht erreicht'}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+async function renderRace() {
+  const content = document.getElementById('content');
+  const classes = (dataCache.home && dataCache.home.classes) || [];
+  if (classes.length === 0) {
+    content.innerHTML = `
+      <div class="s-h"><div><h2>Klassenrennen</h2><div class="sub">Du bist noch in keiner Klasse</div></div></div>
+      <div class="card empty-state"><div class="em-icon">🏁</div><h3>Keine Klasse</h3><p>Tritt erst einer Klasse bei, um am Rennen teilzunehmen.</p>
+      <button class="btn btn-emerald" style="margin-top:18px;" onclick="SRActions.joinClass()">+ Klasse beitreten</button></div>`;
+    return;
+  }
+  // Use first class or store current race classId
+  const classId = window._raceClassId || classes[0].id;
+  window._raceClassId = classId;
+  await loadAndRenderRace(classId, classes);
+
+  // Auto-refresh every 6 seconds
+  clearInterval(window._raceTimer);
+  window._raceTimer = setInterval(() => {
+    if (document.querySelector('.nav-item[data-section="race"]')?.classList.contains('active')) {
+      loadAndRenderRace(window._raceClassId, classes);
+    } else {
+      clearInterval(window._raceTimer);
+    }
+  }, 6000);
+}
+
+async function loadAndRenderRace(classId, classes) {
+  const content = document.getElementById('content');
+  try {
+    const r = await SR.get('/api/data/student/class-race/' + classId);
+    if (!r.ok) { content.innerHTML = errorBox(r.data.error || 'Fehler'); return; }
+    const students = r.data.students || [];
+    const youId = r.data.you_id;
+    const maxXP = Math.max(...students.map(s => s.total_xp || 0), 100);
+    const myRank = students.findIndex(s => s.id === youId) + 1;
+    const cls = classes.find(c => c.id === classId);
+
+    content.innerHTML = `
+      <div class="s-h">
+        <div>
+          <div class="page-h-eyebrow">Live · aktualisiert sich</div>
+          <h1>Klassenrennen <em>${cls ? cls.name : ''}</em></h1>
+          <div class="sub">${myRank > 0 ? 'Du bist auf Platz #' + myRank + ' von ' + students.length : 'Lade...'}</div>
+        </div>
+        ${classes.length > 1 ? `
+          <select onchange="window._raceClassId = parseInt(this.value); loadAndRenderRace(window._raceClassId, ${JSON.stringify(classes).replace(/"/g, '&quot;')})"
+                  style="padding:8px 14px;border-radius:100px;border:1px solid var(--line);background:var(--cream-2);font-family:inherit;">
+            ${classes.map(c => `<option value="${c.id}" ${c.id === classId ? 'selected' : ''}>${c.name}</option>`).join('')}
+          </select>
+        ` : ''}
+      </div>
+      <div class="card">
+        ${students.length === 0 ? `<div class="empty-state"><div class="em-icon">🏁</div><h3>Noch leer</h3><p>Sobald Schüler:innen XP sammeln, startet das Rennen.</p></div>` :
+          students.map((s, i) => {
+            const isYou = s.id === youId;
+            const w = Math.max(2, Math.round((s.total_xp / maxXP) * 100));
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+            return `
+              <div class="race-row" style="${isYou ? 'background:var(--emerald-tint);border-radius:8px;padding:8px;margin:4px 0;' : ''}">
+                <div class="race-av${isYou ? ' you' : ''}" style="font-size:${i < 3 ? '20px' : '14px'};">${medal}</div>
+                <div class="race-name" style="${isYou ? 'color:var(--emerald);font-weight:600;' : ''}">${s.full_name}${isYou ? ' (du)' : ''}</div>
+                <div class="race-bar"><div class="race-fill" style="width:${w}%;background:linear-gradient(90deg,${i === 0 ? '#E8A856,#C77B2C' : 'var(--emerald),#6BD4A0'});transition:width 1s;"></div></div>
+                <div class="race-xp${i === 0 ? ' gold' : ''}">${s.total_xp || 0} XP</div>
+              </div>
+            `;
+          }).join('')}
+      </div>
+      <div style="text-align:center;font-size:12px;color:var(--ink-mute);font-family:'JetBrains Mono',monospace;">Aktualisiert sich alle 6 Sekunden · ${new Date().toLocaleTimeString('de-DE')}</div>
+    `;
+  } catch (e) {
+    content.innerHTML = errorBox(e.message || 'Fehler');
+  }
+}
+
+// ─── PRACTICE / Adaptive engine UI ───
+async function renderPracticeHome() {
+  const content = document.getElementById('content');
+  let stats = { stats: [] };
+  try { stats = (await SR.get('/api/data/student/practice/stats')).data || stats; } catch {}
+
+  const subjects = [
+    { name: 'Mathematik', icon: '📐', color: '#1B6B45' },
+    { name: 'Physik',     icon: '⚛️', color: '#C77B2C' },
+    { name: 'Chemie',     icon: '🧪', color: '#5A4A8A' },
+    { name: 'Biologie',   icon: '🌱', color: '#3A8C5A' },
+  ];
+
+  const statsMap = {};
+  (stats.stats || []).forEach(s => { statsMap[s.subject] = s; });
+
+  content.innerHTML = `
+    <div class="s-h">
+      <div>
+        <div class="page-h-eyebrow">Üben</div>
+        <h1>Adaptives <em>Training</em></h1>
+        <div class="sub">Wähle ein Fach. Die Fragen passen sich deinem Niveau an.</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+      ${subjects.map(s => {
+        const stat = statsMap[s.name];
+        const skill = stat ? parseFloat(stat.avg_skill).toFixed(1) : '—';
+        const answered = stat ? stat.answered : 0;
+        const correct = stat ? stat.correct : 0;
+        const accuracy = answered > 0 ? Math.round((correct / answered) * 100) : 0;
+        return `
+          <div class="card" onclick="startPractice('${s.name}')" style="cursor:pointer;transition:all 0.18s;border-left:3px solid ${s.color};">
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+              <div style="font-size:32px;">${s.icon}</div>
+              <div>
+                <h3 style="font-family:'Fraunces',serif;font-size:20px;font-weight:500;letter-spacing:-0.015em;">${s.name}</h3>
+                <div style="font-size:12px;color:var(--ink-mute);font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;">NIVEAU ${skill} / 5.0</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:18px;font-size:12.5px;color:var(--ink-soft);">
+              <span><strong style="color:var(--ink);">${answered}</strong> beantwortet</span>
+              <span><strong style="color:var(--emerald);">${accuracy}%</strong> richtig</span>
+            </div>
+            <div style="margin-top:14px;font-size:13px;color:var(--emerald);font-weight:500;">Trainieren →</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+let _practiceState = { subject: null, answered: 0, correct: 0, sessionXP: 0 };
+
+async function startPractice(subject) {
+  _practiceState = { subject, answered: 0, correct: 0, sessionXP: 0 };
+  await loadNextPracticeQuestion();
+}
+
+async function loadNextPracticeQuestion() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Frage…</div>';
+  try {
+    const r = await SR.get('/api/data/student/practice/next?subject=' + encodeURIComponent(_practiceState.subject));
+    if (!r.ok || !r.data.question) {
+      content.innerHTML = errorBox('Keine Frage gefunden.');
+      return;
+    }
+    renderPracticeQuestion(r.data.question, r.data.skill_level);
+  } catch (e) {
+    content.innerHTML = errorBox(e.message || 'Fehler beim Laden.');
+  }
+}
+
+function renderPracticeQuestion(q, skill) {
+  const content = document.getElementById('content');
+  const options = q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : null;
+
+  content.innerHTML = `
+    <div class="s-h">
+      <div>
+        <div class="page-h-eyebrow">${q.subject} · ${q.topic} · Niveau ${q.difficulty}/5</div>
+        <h1 style="font-size:26px;">Frage ${_practiceState.answered + 1}</h1>
+      </div>
+      <div style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-mute);">
+        ${_practiceState.correct}/${_practiceState.answered} richtig · +${_practiceState.sessionXP} XP
+      </div>
+    </div>
+
+    <div class="card" style="padding:32px;">
+      <div style="font-family:'Fraunces',serif;font-size:22px;line-height:1.4;font-weight:500;margin-bottom:24px;">
+        ${q.question_text}
+      </div>
+
+      <div id="answer-area">
+        ${q.question_type === 'multiple_choice' && options ? `
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${options.map((opt, i) => `
+              <button class="mc-option" data-answer="${opt.replace(/"/g, '&quot;')}"
+                      style="text-align:left;padding:14px 18px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream-2);font-family:inherit;font-size:15px;cursor:pointer;transition:all 0.15s;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);margin-right:10px;">${String.fromCharCode(65 + i)}</span>
+                ${opt}
+              </button>
+            `).join('')}
+          </div>
+        ` : `
+          <input type="text" id="text-answer" placeholder="Deine Antwort..."
+                 style="width:100%;padding:14px 18px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream-2);font-family:inherit;font-size:16px;outline:none;"
+                 autocomplete="off" />
+          <button class="btn btn-emerald" style="margin-top:14px;" onclick="submitTextAnswer()">Antwort prüfen →</button>
+        `}
+      </div>
+
+      ${q.hint ? `
+        <div style="margin-top:20px;">
+          <button onclick="this.nextElementSibling.style.display='block';this.style.display='none';"
+                  style="background:transparent;border:none;color:var(--ink-mute);font-size:12.5px;cursor:pointer;font-family:inherit;text-decoration:underline;">
+            💡 Tipp anzeigen
+          </button>
+          <div style="display:none;padding:12px 16px;background:var(--cream);border-radius:8px;font-size:13.5px;color:var(--ink-soft);margin-top:8px;">${q.hint}</div>
+        </div>
+      ` : ''}
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-cream" onclick="switchSection('practice')">← Zurück zur Übersicht</button>
+    </div>
+  `;
+
+  // Wire MC buttons
+  document.querySelectorAll('.mc-option').forEach(btn => {
+    btn.onclick = () => submitPracticeAnswer(q.id, btn.dataset.answer);
+    btn.onmouseover = () => { btn.style.borderColor = 'var(--emerald)'; btn.style.background = 'var(--emerald-tint)'; };
+    btn.onmouseout = () => { btn.style.borderColor = 'var(--line)'; btn.style.background = 'var(--cream-2)'; };
+  });
+
+  // Enter key for text input
+  const textInput = document.getElementById('text-answer');
+  if (textInput) {
+    textInput.focus();
+    textInput.onkeydown = (e) => { if (e.key === 'Enter') submitTextAnswer(); };
+  }
+  window._currentQuestionId = q.id;
+}
+
+function submitTextAnswer() {
+  const inp = document.getElementById('text-answer');
+  if (!inp || !inp.value.trim()) return;
+  submitPracticeAnswer(window._currentQuestionId, inp.value);
+}
+
+async function submitPracticeAnswer(questionId, answer) {
+  // Disable all answer buttons while submitting
+  document.querySelectorAll('.mc-option').forEach(b => b.disabled = true);
+
+  try {
+    const r = await SR.post('/api/data/student/practice/answer', { question_id: questionId, answer });
+    if (!r.ok) {
+      SR.toast(r.data.error || 'Fehler.', 'error');
+      return;
+    }
+    const result = r.data;
+    _practiceState.answered++;
+    if (result.correct) {
+      _practiceState.correct++;
+      _practiceState.sessionXP += result.xp_earned;
+    }
+    showPracticeResult(result, answer);
+  } catch (e) {
+    SR.toast('Verbindungsfehler.', 'error');
+  }
+}
+
+function showPracticeResult(result, userAnswer) {
+  const area = document.getElementById('answer-area');
+  if (!area) return;
+  const correct = result.correct;
+  area.innerHTML = `
+    <div style="padding:20px;border-radius:12px;background:${correct ? 'var(--emerald-tint)' : '#F0DACE'};border:2px solid ${correct ? 'var(--emerald)' : 'var(--terra)'};margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <div style="font-size:28px;">${correct ? '✓' : '✗'}</div>
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:20px;font-weight:500;color:${correct ? 'var(--emerald-2)' : 'var(--terra)'};">${correct ? 'Richtig!' : 'Leider falsch.'}</div>
+          ${correct ? `<div style="font-size:13px;color:var(--emerald);font-weight:500;">+${result.xp_earned} XP</div>` : `<div style="font-size:13px;color:var(--ink-soft);">Richtige Antwort: <strong>${result.correct_answer}</strong></div>`}
+        </div>
+      </div>
+      ${result.explanation ? `<div style="font-size:13.5px;color:var(--ink-soft);line-height:1.55;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,0.1);">${result.explanation}</div>` : ''}
+    </div>
+    <button class="btn btn-emerald btn-lg" onclick="loadNextPracticeQuestion()" style="width:100%;">Nächste Frage →</button>
+  `;
+}
+
+function errorBox(msg) {
+  return `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Daten konnten nicht geladen werden</h3><p>${msg}</p></div>`;
+}
+
+// ─── REAL Task Exercise UI ───
+let _exerciseState = { taskId: null, questions: [], answers: [], currentIdx: 0 };
+
+async function openTaskExercise(taskId) {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Aufgabe…</div>';
+  try {
+    const r = await SR.get('/api/data/student/task/' + taskId + '/exercise');
+    if (!r.ok) {
+      content.innerHTML = errorBox(r.data.error || 'Fehler.');
+      return;
+    }
+    const { task, questions, previous_submission } = r.data;
+
+    if (!questions || questions.length === 0) {
+      // No questions attached — show legacy manual-score modal
+      content.innerHTML = `
+        <div class="s-h">
+          <div><div class="page-h-eyebrow">${task.subject || ''} · ${task.class_name || ''}</div>
+          <h1>${task.title}</h1><div class="sub">Diese Aufgabe hat keine Übungsfragen.</div></div>
+          <button class="btn btn-cream" onclick="switchSection('homework')">← Zurück</button>
+        </div>
+        <div class="card">
+          <p style="font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:18px;">${task.description || 'Lehrkraft hat keine Übungsfragen zu dieser Aufgabe zugewiesen. Du kannst deine Punktzahl manuell eingeben.'}</p>
+          <button class="btn btn-emerald" onclick="SRActions.submitTask(${task.id}, '${(task.title||'').replace(/'/g,'&apos;')}')">Punktzahl eingeben</button>
+        </div>
+      `;
+      return;
+    }
+
+    if (previous_submission) {
+      content.innerHTML = `
+        <div class="s-h">
+          <div><div class="page-h-eyebrow">${task.subject || ''} · ${task.class_name || ''}</div>
+          <h1>${task.title}</h1><div class="sub">Bereits abgegeben am ${new Date(previous_submission.submitted_at).toLocaleDateString('de-DE')}</div></div>
+          <button class="btn btn-cream" onclick="switchSection('homework')">← Zurück</button>
+        </div>
+        <div class="card" style="padding:28px;">
+          <div style="display:flex;align-items:center;gap:20px;">
+            <div style="font-family:'Fraunces',serif;font-size:48px;font-weight:500;color:var(--emerald);">${previous_submission.score_pct}%</div>
+            <div>
+              <div style="font-size:15px;font-weight:500;">Ergebnis: ${previous_submission.score_pct}%</div>
+              <div style="font-size:13px;color:var(--emerald);">+${previous_submission.xp_earned} XP verdient</div>
+            </div>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    // Start exercise
+    _exerciseState = { taskId: task.id, questions, answers: new Array(questions.length).fill(''), currentIdx: 0, taskTitle: task.title };
+    renderExerciseQuestion();
+  } catch (e) {
+    content.innerHTML = errorBox(e.message || 'Fehler.');
+  }
+}
+
+function renderExerciseQuestion() {
+  const content = document.getElementById('content');
+  const s = _exerciseState;
+  const q = s.questions[s.currentIdx];
+  const isLast = s.currentIdx === s.questions.length - 1;
+  const options = q.options ? (Array.isArray(q.options) ? q.options : JSON.parse(q.options)) : null;
+  const progress = Math.round(((s.currentIdx) / s.questions.length) * 100);
+
+  content.innerHTML = `
+    <div class="s-h">
+      <div>
+        <div class="page-h-eyebrow">Aufgabe · ${s.taskTitle}</div>
+        <h1 style="font-size:24px;">Frage ${s.currentIdx + 1} von ${s.questions.length}</h1>
+      </div>
+      <button class="btn btn-cream" onclick="if(confirm('Aufgabe verlassen? Fortschritt geht verloren.')) switchSection('homework')">← Verlassen</button>
+    </div>
+
+    <div style="height:6px;background:var(--cream);border-radius:100px;overflow:hidden;">
+      <div style="height:100%;width:${progress}%;background:linear-gradient(90deg,var(--emerald),#6BD4A0);transition:width 0.4s;"></div>
+    </div>
+
+    <div class="card" style="padding:32px;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:0.12em;color:var(--ink-mute);margin-bottom:14px;">${q.topic} · NIVEAU ${q.difficulty}/5</div>
+      <div style="font-family:'Fraunces',serif;font-size:22px;line-height:1.4;font-weight:500;margin-bottom:24px;">${q.question_text}</div>
+
+      <div id="ex-answer-area">
+        ${q.question_type === 'multiple_choice' && options ? `
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            ${options.map((opt, i) => `
+              <button class="ex-option" data-answer="${opt.replace(/"/g, '&quot;')}"
+                      style="text-align:left;padding:14px 18px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream-2);font-family:inherit;font-size:15px;cursor:pointer;transition:all 0.15s;">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-mute);margin-right:10px;">${String.fromCharCode(65 + i)}</span>${opt}
+              </button>
+            `).join('')}
+          </div>
+        ` : `
+          <input type="text" id="ex-text-answer" placeholder="Deine Antwort..." value="${(s.answers[s.currentIdx] || '').replace(/"/g, '&quot;')}"
+                 style="width:100%;padding:14px 18px;border-radius:10px;border:1.5px solid var(--line);background:var(--cream-2);font-family:inherit;font-size:16px;outline:none;" autocomplete="off" />
+        `}
+      </div>
+
+      ${q.hint ? `
+        <div style="margin-top:20px;">
+          <button onclick="this.nextElementSibling.style.display='block';this.style.display='none';"
+                  style="background:transparent;border:none;color:var(--ink-mute);font-size:12.5px;cursor:pointer;font-family:inherit;text-decoration:underline;">💡 Tipp anzeigen</button>
+          <div style="display:none;padding:12px 16px;background:var(--cream);border-radius:8px;font-size:13.5px;color:var(--ink-soft);margin-top:8px;">${q.hint}</div>
+        </div>
+      ` : ''}
+
+      <div style="display:flex;gap:10px;justify-content:space-between;margin-top:24px;">
+        <button class="btn btn-cream" ${s.currentIdx === 0 ? 'disabled style="opacity:0.5"' : ''} onclick="prevExerciseQuestion()">← Zurück</button>
+        ${isLast
+          ? '<button class="btn btn-emerald" onclick="submitExercise()">Aufgabe abgeben →</button>'
+          : '<button class="btn btn-emerald" onclick="nextExerciseQuestion()">Weiter →</button>'
+        }
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('.ex-option').forEach(btn => {
+    btn.onclick = () => {
+      // Visually mark selected
+      document.querySelectorAll('.ex-option').forEach(b => {
+        b.style.borderColor = 'var(--line)';
+        b.style.background = 'var(--cream-2)';
+      });
+      btn.style.borderColor = 'var(--emerald)';
+      btn.style.background = 'var(--emerald-tint)';
+      _exerciseState.answers[_exerciseState.currentIdx] = btn.dataset.answer;
+    };
+    if (_exerciseState.answers[_exerciseState.currentIdx] === btn.dataset.answer) {
+      btn.style.borderColor = 'var(--emerald)';
+      btn.style.background = 'var(--emerald-tint)';
+    }
+  });
+
+  const ti = document.getElementById('ex-text-answer');
+  if (ti) {
+    ti.focus();
+    ti.oninput = () => { _exerciseState.answers[_exerciseState.currentIdx] = ti.value; };
+  }
+}
+
+function nextExerciseQuestion() {
+  const ti = document.getElementById('ex-text-answer');
+  if (ti) _exerciseState.answers[_exerciseState.currentIdx] = ti.value;
+  _exerciseState.currentIdx++;
+  renderExerciseQuestion();
+}
+
+function prevExerciseQuestion() {
+  _exerciseState.currentIdx--;
+  renderExerciseQuestion();
+}
+
+async function submitExercise() {
+  const ti = document.getElementById('ex-text-answer');
+  if (ti) _exerciseState.answers[_exerciseState.currentIdx] = ti.value;
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Werte aus…</div>';
+
+  const payload = {
+    answers: _exerciseState.questions.map((q, i) => ({
+      question_id: q.id,
+      answer: _exerciseState.answers[i] || ''
+    }))
+  };
+  try {
+    const r = await SR.post('/api/data/student/task/' + _exerciseState.taskId + '/submit-exercise', payload);
+    if (!r.ok) {
+      content.innerHTML = errorBox(r.data.error || 'Fehler.');
+      return;
+    }
+    showExerciseResult(r.data);
+  } catch (e) {
+    content.innerHTML = errorBox(e.message || 'Fehler.');
+  }
+}
+
+function showExerciseResult(result) {
+  const content = document.getElementById('content');
+  const pct = result.score_pct;
+  const goodPct = pct >= 80;
+  content.innerHTML = `
+    <div class="s-h">
+      <div><div class="page-h-eyebrow">Aufgabe abgegeben</div>
+      <h1>Dein <em>Ergebnis</em></h1></div>
+      <button class="btn btn-cream" onclick="switchSection('homework')">← Zur Hausaufgabenliste</button>
+    </div>
+    <div class="card" style="padding:36px;text-align:center;">
+      <div style="font-family:'Fraunces',serif;font-size:72px;font-weight:500;color:${goodPct ? 'var(--emerald)' : pct >= 50 ? 'var(--amber)' : 'var(--terra)'};line-height:1;">${pct}%</div>
+      <div style="font-size:16px;color:var(--ink-soft);margin-top:8px;">${result.correct} von ${result.total} richtig</div>
+      <div style="display:inline-block;margin-top:14px;padding:6px 14px;border-radius:100px;background:var(--emerald-tint);color:var(--emerald);font-weight:500;font-size:14px;">+${result.xp_earned} XP verdient</div>
+    </div>
+    <div class="card">
+      <div class="card-tag emerald">— Detail-Auswertung</div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px;">
+        ${result.detail.map((d, i) => `
+          <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line-soft);">
+            <div style="width:24px;height:24px;border-radius:50%;background:${d.correct?'var(--emerald-tint)':'#F0DACE'};color:${d.correct?'var(--emerald)':'var(--terra)'};display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;">${d.correct?'✓':'✗'}</div>
+            <div style="flex:1;font-size:13.5px;">Frage ${i + 1}</div>
+            ${!d.correct ? `<div style="font-size:12px;color:var(--ink-mute);">Richtig: <strong>${d.correct_answer}</strong></div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+  // Reset cache so homework list re-fetches
+  delete dataCache.homework;
+  delete dataCache.home;
+}
+
+// ─── Welcome onboarding for empty dashboards ───
+function welcomeBox(role, hint) {
+  return `
+    <div class="card" style="padding:32px;text-align:center;border:2px dashed var(--emerald);background:var(--emerald-tint);">
+      <div style="font-size:36px;margin-bottom:14px;">👋</div>
+      <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:500;margin-bottom:8px;">Willkommen!</div>
+      <div style="font-size:14px;color:var(--ink-soft);line-height:1.6;max-width:480px;margin:0 auto;">${hint}</div>
+    </div>
+  `;
+}
+
+// ─── ACHIEVEMENTS ───
+async function renderAchievements() {
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="loading">Lade Erfolge…</div>';
+  try {
+    const r = await SR.get('/api/data/student/achievements');
+    if (!r.ok) throw new Error(r.data.error);
+    const list = r.data.achievements || [];
+    const earned = list.filter(a => a.earned);
+    const locked = list.filter(a => !a.earned);
+
+    content.innerHTML = `
+      <div class="s-h">
+        <div>
+          <div class="page-h-eyebrow">Sammlung</div>
+          <h1>Deine <em>Erfolge</em></h1>
+          <div class="sub">${earned.length} von ${list.length} freigeschaltet</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+        ${list.map(a => `
+          <div style="background:${a.earned ? 'var(--emerald-tint)' : 'var(--cream-2)'};border:1.5px solid ${a.earned ? 'var(--emerald)' : 'var(--line)'};border-radius:14px;padding:18px;text-align:center;position:relative;${a.earned ? '' : 'opacity:0.75;'}">
+            ${a.earned
+              ? '<div style="position:absolute;top:10px;right:10px;font-size:14px;">✅</div>'
+              : '<div style="position:absolute;top:10px;right:10px;font-size:14px;">🔒</div>'}
+            <div style="width:56px;height:56px;border-radius:50%;background:${a.earned ? 'var(--emerald)' : 'var(--line)'};color:white;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-family:'Fraunces',serif;font-size:24px;font-weight:500;">${a.earned ? (a.icon || '★') : '🔒'}</div>
+            <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:500;margin-bottom:4px;">${a.title}</div>
+            <div style="font-size:12px;color:var(--ink-soft);line-height:1.4;">${a.description}</div>
+            ${a.earned
+              ? `<div style="font-size:10px;color:var(--emerald);margin-top:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;font-weight:600;">✓ FREIGESCHALTET ${a.earned_at ? '· ' + new Date(a.earned_at).toLocaleDateString('de-DE') : ''}</div>`
+              : `<div style="font-size:10px;color:var(--ink-mute);margin-top:8px;font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;">🔒 NOCH GESPERRT</div>`}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } catch (e) {
+    content.innerHTML = `<div class="card empty-state"><div class="em-icon">⚠️</div><h3>Fehler</h3><p>${e.message || ''}</p></div>`;
+  }
+}
+
+init();
+</script>
+</body>
+</html>
