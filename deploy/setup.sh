@@ -55,10 +55,12 @@ say "App-Dateien kopieren..."
 mkdir -p "$APP_DIR"
 # Copy from current dir (assumes you ran setup.sh from project root)
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-cp -r "$SOURCE_DIR/backend" "$APP_DIR/"
-cp -r "$SOURCE_DIR/public" "$APP_DIR/"
-cp -r "$SOURCE_DIR/database" "$APP_DIR/"
-cp "$SOURCE_DIR/package.json" "$APP_DIR/"
+if [ "$SOURCE_DIR" != "$APP_DIR" ]; then
+  cp -r "$SOURCE_DIR/backend" "$APP_DIR/"
+  cp -r "$SOURCE_DIR/public" "$APP_DIR/"
+  cp -r "$SOURCE_DIR/database" "$APP_DIR/"
+  cp "$SOURCE_DIR/package.json" "$APP_DIR/"
+fi
 
 # ───── Initialize DB schema ─────
 say "Datenbank-Schema einlesen..."
