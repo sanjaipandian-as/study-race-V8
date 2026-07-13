@@ -19,7 +19,7 @@ err() { echo -e "${RED}✗${NC} $1"; exit 1; }
 DOMAIN="${DOMAIN:-studyrace.de}"
 DB_PASSWORD="${DB_PASSWORD:-$(openssl rand -hex 16)}"
 JWT_SECRET="${JWT_SECRET:-$(openssl rand -hex 32)}"
-APP_DIR="/var/www/studyrace"
+APP_DIR="/var/www/Study-race-V8"
 
 say "Domain: $DOMAIN"
 say "App-Verzeichnis: $APP_DIR"
@@ -106,9 +106,9 @@ chmod 600 "$APP_DIR/.env"
 
 # ───── systemd service ─────
 say "systemd-Service einrichten..."
-cat > /etc/systemd/system/studyrace.service <<EOF
+cat > /etc/systemd/system/Study-race-V8.service <<EOF
 [Unit]
-Description=StudyRace Node.js App
+Description=Study-race-V8 Node.js App
 After=network.target postgresql.service
 Requires=postgresql.service
 
@@ -123,7 +123,7 @@ Restart=always
 RestartSec=5
 StandardOutput=journal
 StandardError=journal
-SyslogIdentifier=studyrace
+SyslogIdentifier=Study-race-V8
 
 [Install]
 WantedBy=multi-user.target
@@ -131,18 +131,18 @@ EOF
 
 chown -R www-data:www-data "$APP_DIR"
 systemctl daemon-reload
-systemctl enable studyrace
-systemctl restart studyrace
+systemctl enable Study-race-V8
+systemctl restart Study-race-V8
 
 # ───── Wait for app to come up ─────
 sleep 3
 if ! curl -sf http://127.0.0.1:3000/api/health >/dev/null; then
-  warn "App antwortet nicht auf Port 3000 — Logs prüfen mit: journalctl -u studyrace -n 50"
+  warn "App antwortet nicht auf Port 3000 — Logs prüfen mit: journalctl -u Study-race-V8 -n 50"
 fi
 
 # ───── nginx ─────
 say "nginx konfigurieren..."
-cat > /etc/nginx/sites-available/studyrace <<EOF
+cat > /etc/nginx/sites-available/Study-race-V8 <<EOF
 server {
     listen 80;
     listen [::]:80;
@@ -162,7 +162,7 @@ server {
 }
 EOF
 
-ln -sf /etc/nginx/sites-available/studyrace /etc/nginx/sites-enabled/studyrace
+ln -sf /etc/nginx/sites-available/Study-race-V8 /etc/nginx/sites-enabled/Study-race-V8
 rm -f /etc/nginx/sites-enabled/default
 
 nginx -t && systemctl restart nginx
@@ -209,7 +209,7 @@ echo ""
 echo "  Datenbank-Passwort: $DB_PASSWORD"
 echo "  JWT-Secret:         (in $APP_DIR/.env)"
 echo ""
-echo "  Logs ansehen:        journalctl -u studyrace -f"
-echo "  Service neustarten:  systemctl restart studyrace"
+echo "  Logs ansehen:        journalctl -u Study-race-V8 -f"
+echo "  Service neustarten:  systemctl restart Study-race-V8"
 echo "  nginx neuladen:      systemctl reload nginx"
 echo ""
