@@ -18,6 +18,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (url.pathname.startsWith('/api/')) return;  // Always go to network for API
+  if (url.origin !== self.location.origin) return; // Skip external requests (Google Fonts, etc.)
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(resp => {
       // cache successful static responses
